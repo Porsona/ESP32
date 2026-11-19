@@ -1,0 +1,6 @@
+﻿Processing cyd_ili9341 (platform: espressif32@6.4.0; board: esp32dev; framework: arduino)
+--------------------------------------------------------------------------------
+Verbose mode can be enabled via `-v, --verbose` option
+Removing .pio\build\cyd_ili9341
+Done cleaning
+========================= [SUCCESS] Took 0.68 seconds =========================

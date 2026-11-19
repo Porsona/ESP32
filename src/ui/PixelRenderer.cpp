@@ -70,18 +70,41 @@ void PixelRenderer::drawPanel(const Rect& r,bool pressed,bool enabled) {
   tft.drawPixel(r.x+1,r.y+r.h-2,border); tft.drawPixel(r.x+r.w-2,r.y+r.h-2,border);
 }
 
-void PixelRenderer::drawButton(const Rect& r,const char* text,bool pressed,bool enabled) {
+void PixelRenderer::drawButton(const Rect& r,const char* text,bool pressed,bool enabled,uint8_t textSize) {
   drawPanel(r,pressed,enabled);
   const uint16_t fill=!enabled?theme::Background:pressed?theme::Mint:theme::Panel;
   const uint16_t ink=!enabled?theme::Panel:pressed?theme::Background:theme::Gold;
-  drawText(text,r.x+r.w/2,r.y+r.h/2,2,ink,fill,MC_DATUM);
+  drawText(text,r.x+r.w/2,r.y+r.h/2,textSize,ink,fill,MC_DATUM);
+}
+
+void PixelRenderer::drawGlyph8(const uint8_t rows[8],int16_t x,int16_t y,uint8_t scale,uint16_t ink) {
+  auto& tft=display_.graphics();
+  for (int row=0;row<8;++row) {
+    for (int col=0;col<8;) {  // Run-length per row: few SPI fills, no buffer.
+      if (!(rows[row]&(0x80U>>col))) { ++col; continue; }
+      const int first=col;
+      while (col<8 && (rows[row]&(0x80U>>col))) ++col;
+      tft.fillRect(x+first*scale,y+row*scale,(col-first)*scale,scale,ink);
+    }
+  }
+}
+
+void PixelRenderer::drawCheckbox(const Rect& r,bool checked) {
+  static const uint8_t CHECK[8]={0x00,0x01,0x03,0x86,0xCC,0x78,0x30,0x00};
+  auto& tft=display_.graphics();
+  tft.fillRect(r.x,r.y,r.w,r.h,checked?theme::Mint:theme::Background);
+  const uint16_t border=checked?theme::Gold:theme::Mint;
+  tft.drawRect(r.x,r.y,r.w,r.h,border);
+  tft.drawRect(r.x+1,r.y+1,r.w-2,r.h-2,border);  // 2 px pixel-art frame.
+  const uint8_t scale=static_cast<uint8_t>((r.w-4)/8);
+  if (checked && scale) drawGlyph8(CHECK,r.x+(r.w-8*scale)/2,r.y+(r.h-8*scale)/2,scale,theme::Background);
 }
 
 void PixelRenderer::drawStatusBar(const char* tag) {
   auto& tft=display_.graphics();
   tft.fillRect(0,0,320,32,theme::Panel);
   tft.drawFastHLine(0,31,320,theme::Mint);
-  drawText("DESKOS M1",8,8,2,theme::Gold,theme::Panel);
+  drawText("DESKOS M2",8,8,2,theme::Gold,theme::Panel);
   drawText(tag,312,12,1,theme::Mint,theme::Panel,TR_DATUM);
 }
 }  // namespace deskos

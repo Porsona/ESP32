@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <cctype>
+#include <cstdlib>
 #include <cstring>
 #include "DisplayHAL.h"
 #include "DiagnosticScreen.h"
@@ -14,10 +15,13 @@
 #include "hal/FocusClock.h"
 #include "storage/FocusStorageNVS.h"
 #include "apps/FocusQuestScreen.h"
+#include "storage/MissionStorageNVS.h"
+#include "services/FocusCompletionAdapter.h"
+#include "apps/DailyMissionsScreen.h"
 
 DisplayHAL display;
 TouchHAL touch;
-constexpr char FIRMWARE_VERSION[] = "M1_FOCUS_01";
+constexpr char FIRMWARE_VERSION[] = "M2_MISSIONS_01";
 DiagnosticScreen diagnostics(display, FIRMWARE_VERSION);
 TouchCalibrationScreen calibrationScreen(display);
 TouchTestScreen touchTest(display);
@@ -31,6 +35,11 @@ deskos::FocusStorageNVS focusStorage;
 deskos::ProgressService progressService;
 deskos::FocusSessionService focusService(focusClock,focusStorage,progressService);
 deskos::FocusQuestScreen focusScreen(pixelRenderer,appManager,focusService,progressService);
+deskos::MissionStorageNVS missionStorage;
+deskos::FocusCompletionAdapter focusCompletions(focusService,progressService);
+// No IDaySource in M2: quest days advance only via NEW DAY (TimeService/NTP is M5).
+deskos::DailyMissionService missionService(focusClock,missionStorage,progressService,focusCompletions);
+deskos::DailyMissionsScreen missionsScreen(pixelRenderer,appManager,missionService,progressService);
 
 enum class View { Calibration, Test, Diagnostics, Shell };
 View view=View::Calibration;
@@ -38,7 +47,7 @@ bool haveCalibration=false, diagnosticsWaitForRelease=true, observedRaw=false;
 bool shellReady=false, shellWaitForRelease=true;
 uint32_t lastTouchLog=0, lastHeapLog=0;
 uint32_t lastShellUpdate=0;
-uint32_t lastFocusRevision=0;
+uint32_t lastFocusRevision=0, lastMissionRevision=0, lastMissionGrants=0;
 
 void logFocusState() {
   if (lastFocusRevision==focusService.revision()) return;
@@ -50,6 +59,47 @@ void logFocusState() {
     static_cast<unsigned long>(progress.totalXP),static_cast<unsigned long>(progress.completedFocusSessions),
     static_cast<unsigned long>(progress.currentSessionId),static_cast<unsigned long>(progress.lastRewardedSessionId),
     focusService.savePending()?1U:0U,deskos::focusErrorName(focusService.error()));
+}
+
+void logMissionState(bool quests=false) {
+  const uint32_t grants=progressService.ledger().grantedCount;
+  if (grants!=lastMissionGrants) {
+    char key[32];
+    deskos::ProgressService::formatRewardKey(key,sizeof(key),missionService.lastRewardKey());
+    Serial.printf("MISSION_REWARD: key=%s result=%s bonus_xp=%lu total_xp=%lu\n",key,
+                  deskos::ProgressService::resultName(missionService.lastReward()),
+                  static_cast<unsigned long>(progressService.bonusXP()),
+                  static_cast<unsigned long>(progressService.totalXP()));
+    lastMissionGrants=grants;
+  }
+  if (!quests && lastMissionRevision==missionService.revision()) return;
+  lastMissionRevision=missionService.revision();
+  const auto& record=missionService.committed();
+  Serial.printf("MISSIONS: ms=%lu day=%lu done=%u/%u focus_anchor=%ld rewards=%lu bonus_xp=%lu total_xp=%lu generation=%lu save_pending=%u error=%s\n",
+    static_cast<unsigned long>(millis()),static_cast<unsigned long>(missionService.dayId()),
+    static_cast<unsigned>(missionService.completedCount()),static_cast<unsigned>(missionService.questCount()),
+    record.focusAnchorId==deskos::FOCUS_ANCHOR_UNKNOWN?-1L:static_cast<long>(record.focusAnchorId),
+    static_cast<unsigned long>(progressService.ledger().grantedCount),
+    static_cast<unsigned long>(progressService.bonusXP()),static_cast<unsigned long>(progressService.totalXP()),
+    static_cast<unsigned long>(record.generation),missionService.savePending()?1U:0U,
+    deskos::missionErrorName(missionService.error()));
+  if (!quests) return;
+  for (uint8_t i=0;i<missionService.questCount();++i) {
+    const auto& q=missionService.quest(i);
+    Serial.printf("QUEST: id=%u title=\"%s\" kind=%s xp=%u done=%u rewarded=%u\n",
+                  static_cast<unsigned>(q.questId),q.title,deskos::questKindName(q.kind),
+                  static_cast<unsigned>(q.rewardXP),deskos::questCompleted(q)?1U:0U,missionService.rewarded(i)?1U:0U);
+  }
+}
+
+// "QTITLE <id> <TEXT>": rename a quest; questId (reward key) and status are kept.
+void titleCommand(const char* args) {
+  char* end=nullptr;
+  const long id=std::strtol(args,&end,10);
+  if (end==args || *end!=' ' || id<1 || id>255) { Serial.println("QTITLE: USAGE QTITLE <ID> <TITLE 1-16 CHARS A-Z 0-9 :+-/.!?#>"); return; }
+  const bool ok=missionService.setTitle(static_cast<uint8_t>(id),end+1);
+  Serial.printf("QTITLE: %s id=%ld\n",ok?(missionService.savePending()?"SAVE_PENDING":"SAVED"):"REJECTED",id);
+  logMissionState(true);
 }
 
 const char* viewName() {
@@ -93,10 +143,11 @@ void registerShell() {
   for (uint8_t id=1;id<deskos::APP_COUNT;++id) {
     const auto appId=static_cast<deskos::AppId>(id);
     deskos::IApp& screen=appId==deskos::AppId::Focus?static_cast<deskos::IApp&>(focusScreen):
-                                                               static_cast<deskos::IApp&>(placeholderScreen);
+                         appId==deskos::AppId::Missions?static_cast<deskos::IApp&>(missionsScreen):
+                                                        static_cast<deskos::IApp&>(placeholderScreen);
     if (!appManager.registerApp(appId,screen)) shellReady=false;
   }
-  Serial.printf("SHELL_REGISTRY: %s ids=7 screen_instances=3\n",shellReady?"READY":"FAILED");
+  Serial.printf("SHELL_REGISTRY: %s ids=7 screen_instances=4\n",shellReady?"READY":"FAILED");
 }
 
 void dispatchShellTouch(const TouchFrame& frame) {
@@ -125,6 +176,10 @@ void printCalibration() {
                 calibration.rmsError,calibration.maxError,calibration.verificationMaxError);
 }
 
+void printHelp() {
+  Serial.println("COMMANDS: HOME | BACK | CAL | RETRY | TEST | DIAG | NEXT | STATUS | MISSIONS | QTITLE <ID> <TITLE> | HELP (newline)");
+}
+
 void command(const char* line, uint32_t now) {
   if (!std::strcmp(line,"CAL") || !std::strcmp(line,"RETRY")) startCalibration(now);
   else if (!std::strcmp(line,"DIAG")) showDiagnostics(now);
@@ -138,13 +193,14 @@ void command(const char* line, uint32_t now) {
     if (view!=View::Diagnostics) showDiagnostics(now);
     else diagnostics.nextTest(now);
   } else if (!std::strcmp(line,"STATUS")) {
-    printCalibration(); lastFocusRevision=0; logFocusState();
-  }
-  else Serial.println("COMMANDS: HOME | BACK | CAL | RETRY | TEST | DIAG | NEXT | STATUS | HELP (newline)");
+    printCalibration(); lastFocusRevision=0; logFocusState(); logMissionState(true);
+  } else if (!std::strcmp(line,"MISSIONS")) logMissionState(true);
+  else if (!std::strncmp(line,"QTITLE ",7)) titleCommand(line+7);
+  else printHelp();
 }
 
 void serviceSerial(uint32_t now) {
-  static char buffer[24];
+  static char buffer[40];  // Fits "QTITLE 5 " + 16-char title.
   static uint8_t length=0;
   static bool overflow=false;
   // A bounded parser keeps touch polling alive even if Serial is flooded.
@@ -194,7 +250,15 @@ void setup() {
                 static_cast<unsigned long>(deskos::FOCUS_DURATION_MS),
                 static_cast<unsigned long>(deskos::BREAK_DURATION_MS));
   logFocusState();
-  Serial.println("COMMANDS: HOME | BACK | CAL | RETRY | TEST | DIAG | NEXT | STATUS | HELP (newline)");
+  missionService.begin();  // After Focus: the Focus anchor needs loaded progress.
+  Serial.printf("MISSION_RESTORE: result=%s day=%lu bonus_xp=%lu total_xp=%lu\n",
+                deskos::missionLoadName(missionService.loadResult()),
+                static_cast<unsigned long>(missionService.dayId()),
+                static_cast<unsigned long>(progressService.bonusXP()),
+                static_cast<unsigned long>(progressService.totalXP()));
+  lastMissionGrants=progressService.ledger().grantedCount;
+  logMissionState(true);
+  printHelp();
   registerShell();
   haveCalibration=touchcal::load(calibration);
   if (haveCalibration) {
@@ -209,6 +273,7 @@ void setup() {
 void loop() {
   const uint32_t now=millis();
   focusService.update(); // Always runs, including Home, other apps, CAL, TEST and DIAG.
+  missionService.update();  // Same loop: consumes a committed FocusCompleted immediately.
   serviceSerial(now);
   const TouchFrame frame=touch.poll(now);
   logTouch(frame,now);
@@ -235,6 +300,7 @@ void loop() {
     appManager.update(deltaMs);
   }
   logFocusState();
+  logMissionState();
   if (now-lastHeapLog>=5000) {
     lastHeapLog=now;
     const char* activeApp=appManager.activeId()==deskos::AppId::None?"NONE":
