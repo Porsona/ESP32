@@ -6,3 +6,12 @@
 /docs/baselines/
 /tests/.build/
 /.tools/
+# Secrets never belong in Git: Wi-Fi/PC Agent credentials live in ESP32 NVS
+# and in %APPDATA%\DeskOS on the PC.
+secrets.h
+include/secrets*.h
+*.secret
+*.token
+.env
+tools/pc_agent/config.json
+tools/pc_agent/__pycache__/

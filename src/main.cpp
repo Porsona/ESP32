@@ -21,10 +21,15 @@
 #include "storage/BlobStoreNVS.h"
 #include "apps/PixelPetScreen.h"
 #include "apps/PixelWindowScreen.h"
+#include "net/NetworkService.h"
+#include "net/TimeServiceESP.h"
+#include "net/HttpsFetchTask.h"
+#include "services/LiveWindowContext.h"
+#include "apps/WeatherScreen.h"
 
 DisplayHAL display;
 TouchHAL touch;
-constexpr char FIRMWARE_VERSION[] = "M4_WINDOW_01";
+constexpr char FIRMWARE_VERSION[] = "M5_WEATHER_01";
 DiagnosticScreen diagnostics(display, FIRMWARE_VERSION);
 TouchCalibrationScreen calibrationScreen(display);
 TouchTestScreen touchTest(display);
@@ -40,13 +45,18 @@ deskos::FocusSessionService focusService(focusClock,focusStorage,progressService
 deskos::FocusQuestScreen focusScreen(pixelRenderer,appManager,focusService,progressService);
 deskos::MissionStorageNVS missionStorage;
 deskos::FocusCompletionAdapter focusCompletions(focusService,progressService);
-// No IDaySource in M2: quest days advance only via NEW DAY (TimeService/NTP is M5).
-deskos::DailyMissionService missionService(focusClock,missionStorage,progressService,focusCompletions);
+deskos::NetworkService network;          // Wi-Fi only when configured over Serial.
+deskos::TimeServiceESP timeService;      // NTP, valid only after a sync in this boot.
+// Quest days: manual NEW DAY always; plus automatic local-midnight rollover once NTP is synced.
+deskos::DailyMissionService missionService(focusClock,missionStorage,progressService,focusCompletions,&timeService);
 deskos::DailyMissionsScreen missionsScreen(pixelRenderer,appManager,missionService,progressService);
-deskos::BlobStoreNVS blobStore;  // Shared by Pet (and later Window/Weather) settings records.
+deskos::BlobStoreNVS blobStore;  // Shared by Pet, Window and Weather records.
 deskos::PetService petService(blobStore,progressService,focusClock);
 deskos::PixelPetScreen petScreen(pixelRenderer,appManager,petService);
-deskos::NoWindowContext windowContext;  // No trusted clock yet: AUTO shows NO CLOCK.
+deskos::HttpsFetchTask httpsFetcher;
+deskos::WeatherService weatherService(focusClock,blobStore,httpsFetcher,network,timeService);
+deskos::WeatherScreen weatherScreen(pixelRenderer,appManager,weatherService,network,timeService,focusClock);
+deskos::LiveWindowContext windowContext(timeService,weatherService);  // AUTO: NO CLOCK until NTP.
 deskos::PixelWindowScreen windowScreen(pixelRenderer,appManager,blobStore,windowContext);
 
 enum class View { Calibration, Test, Diagnostics, Shell };
@@ -56,6 +66,7 @@ bool shellReady=false, shellWaitForRelease=true;
 uint32_t lastTouchLog=0, lastHeapLog=0;
 uint32_t lastShellUpdate=0;
 uint32_t lastFocusRevision=0, lastMissionRevision=0, lastMissionGrants=0;
+bool httpsFetcherStarted=false;
 
 void logFocusState() {
   if (lastFocusRevision==focusService.revision()) return;
@@ -150,6 +161,7 @@ deskos::IApp& screenFor(deskos::AppId id) {
   switch (id) {
     case deskos::AppId::Pet: return petScreen;
     case deskos::AppId::Window: return windowScreen;
+    case deskos::AppId::Weather: return weatherScreen;
     case deskos::AppId::Focus: return focusScreen;
     case deskos::AppId::Missions: return missionsScreen;
     default: return placeholderScreen;  // Apps not built yet keep the M0 placeholder.
@@ -197,6 +209,8 @@ void printCalibration() {
 
 void printHelp() {
   Serial.println("COMMANDS: HOME | BACK | CAL | RETRY | TEST | DIAG | NEXT | STATUS | MISSIONS | QTITLE <ID> <TITLE> | PET | HELP (newline)");
+  Serial.println("NETWORK: WIFI | WIFI SSID <name> | WIFI PASS <password> | WIFI OPEN | WIFI ON | WIFI OFF | WIFI FORGET | TIME");
+  Serial.println("WEATHER: WEATHER | WEATHER REFRESH | WEATHER LOC <lat> <lon> [label]");
 }
 
 void logPetState() {
@@ -207,7 +221,76 @@ void logPetState() {
                 static_cast<unsigned long>(petService.record().lastSeenXP));
 }
 
-void command(const char* line, uint32_t now) {
+void logNetState() {
+  char ip[16]; deskos::formatIPv4(network.ipv4(),ip,sizeof(ip));
+  Serial.printf("NET: state=%s ssid=\"%s\" pass_len=%u enabled=%u ip=%s rssi=%d reconnects=%lu\n",
+                deskos::netStateName(network.state()),network.ssid(),static_cast<unsigned>(network.passwordLength()),
+                network.enabled()?1U:0U,ip,static_cast<int>(network.rssi()),static_cast<unsigned long>(network.reconnects()));
+  if (timeService.valid()) {
+    const uint32_t e=timeService.epoch();
+    Serial.printf("TIME: synced=1 local=%02u:%02u day_key=%lu syncs=%lu\n",static_cast<unsigned>(deskos::localHour(e)),
+                  static_cast<unsigned>(deskos::localMinute(e)),static_cast<unsigned long>(deskos::localDayKey(e)),
+                  static_cast<unsigned long>(timeService.syncCount()));
+  } else Serial.printf("TIME: synced=0 (no NTP yet; quest days stay manual)\n");
+}
+
+uint32_t lastWeatherRevision=0;
+void logWeatherState(bool force=false) {
+  if (!force && lastWeatherRevision==weatherService.revision()) return;
+  lastWeatherRevision=weatherService.revision();
+  const auto& r=weatherService.reading();
+  uint32_t age=0; const bool known=weatherService.ageSeconds(age);
+  char lat[16],lon[16];
+  deskos::formatCoordinate(weatherService.location().latE4,lat,sizeof(lat));
+  deskos::formatCoordinate(weatherService.location().lonE4,lon,sizeof(lon));
+  Serial.printf("WEATHER: loc=\"%s\" %s,%s has=%u src=%u temp_deci=%d code=%u hum=%u age_s=%ld fetching=%u error=%s http=%d failures=%u next_ms=%lu\n",
+                weatherService.location().label,lat,lon,weatherService.hasReading()?1U:0U,
+                static_cast<unsigned>(weatherService.source()),static_cast<int>(r.temperatureDeci),static_cast<unsigned>(r.code),
+                static_cast<unsigned>(r.humidity),known?static_cast<long>(age):-1L,weatherService.fetching()?1U:0U,
+                deskos::weatherErrorName(weatherService.lastError()),weatherService.lastHttpCode(),
+                static_cast<unsigned>(weatherService.failures()),static_cast<unsigned long>(weatherService.msUntilNextAttempt()));
+}
+
+// WIFI SSID <name> | WIFI PASS <password> | WIFI OPEN | WIFI ON | WIFI OFF | WIFI FORGET | WIFI
+// The password is case-sensitive, stored only in NVS and never printed back.
+void wifiCommand(const char* upper,const char* raw) {
+  bool ok=true;
+  if (!std::strncmp(upper,"WIFI SSID ",10)) ok=network.setSsid(raw+10);
+  else if (!std::strncmp(upper,"WIFI PASS ",10)) ok=network.setPassword(raw+10);
+  else if (!std::strcmp(upper,"WIFI OPEN")) ok=network.setPassword("");
+  else if (!std::strcmp(upper,"WIFI ON")) network.setEnabled(true);
+  else if (!std::strcmp(upper,"WIFI OFF")) network.setEnabled(false);
+  else if (!std::strcmp(upper,"WIFI FORGET")) network.forget();
+  else if (std::strcmp(upper,"WIFI")) ok=false;
+  if (!ok) Serial.println("WIFI: REJECTED (SSID 1-32 chars, password 8-64 chars or WIFI OPEN)");
+  logNetState();
+}
+
+// WEATHER | WEATHER REFRESH | WEATHER LOC <lat> <lon> [LABEL]
+void weatherCommand(const char* upper) {
+  if (!std::strcmp(upper,"WEATHER REFRESH")) {
+    Serial.println(weatherService.requestRefresh()?"WEATHER: REFRESH_QUEUED":"WEATHER: BUSY_OR_RATE_LIMITED (30 s)");
+  } else if (!std::strncmp(upper,"WEATHER LOC ",12)) {
+    char lat[16]={0},lon[16]={0},label[16]={0};
+    const int n=std::sscanf(upper+12,"%15s %15s %15[A-Z0-9 .,-]",lat,lon,label);
+    deskos::WeatherLocation l;
+    std::memset(&l,0,sizeof(l));
+    std::snprintf(l.label,sizeof(l.label),"%s",n>=3?label:"CUSTOM");
+    const bool ok=n>=2 && deskos::parseCoordinateE4(lat,900000,l.latE4) &&
+                  deskos::parseCoordinateE4(lon,1800000,l.lonE4) && weatherService.setLocation(l);
+    Serial.println(ok?"WEATHER: LOCATION_SAVED":"WEATHER: USAGE WEATHER LOC <LAT> <LON> [LABEL<=15]");
+  } else if (std::strcmp(upper,"WEATHER")) Serial.println("WEATHER: USAGE WEATHER | WEATHER REFRESH | WEATHER LOC <LAT> <LON> [LABEL]");
+  logWeatherState(true);
+}
+
+void command(const char* raw, uint32_t now) {
+  char line[112];
+  size_t n=0;
+  for (;raw[n] && n+1<sizeof(line);++n) line[n]=static_cast<char>(std::toupper(static_cast<unsigned char>(raw[n])));
+  line[n]=0;
+  if (!std::strcmp(line,"WIFI") || !std::strncmp(line,"WIFI ",5)) { wifiCommand(line,raw); return; }
+  if (!std::strcmp(line,"WEATHER") || !std::strncmp(line,"WEATHER ",8)) { weatherCommand(line); return; }
+  if (!std::strcmp(line,"TIME")) { logNetState(); return; }
   if (!std::strcmp(line,"CAL") || !std::strcmp(line,"RETRY")) startCalibration(now);
   else if (!std::strcmp(line,"DIAG")) showDiagnostics(now);
   else if (!std::strcmp(line,"TEST")) showTest(now);
@@ -221,6 +304,7 @@ void command(const char* line, uint32_t now) {
     else diagnostics.nextTest(now);
   } else if (!std::strcmp(line,"STATUS")) {
     printCalibration(); lastFocusRevision=0; logFocusState(); logMissionState(true); logPetState();
+    logNetState(); logWeatherState(true);
   } else if (!std::strcmp(line,"MISSIONS")) logMissionState(true);
   else if (!std::strcmp(line,"PET")) logPetState();
   else if (!std::strncmp(line,"QTITLE ",7)) titleCommand(line+7);
@@ -228,7 +312,7 @@ void command(const char* line, uint32_t now) {
 }
 
 void serviceSerial(uint32_t now) {
-  static char buffer[40];  // Fits "QTITLE 5 " + 16-char title.
+  static char buffer[112];  // Raw case kept: "WIFI PASS " + 64-char passphrase fits.
   static uint8_t length=0;
   static bool overflow=false;
   // A bounded parser keeps touch polling alive even if Serial is flooded.
@@ -239,7 +323,7 @@ void serviceSerial(uint32_t now) {
       else if (length) { buffer[length]=0; command(buffer,now); }
       length=0; overflow=false;
     } else if (ch>=32 && ch<=126) {
-      if (length+1<sizeof(buffer)) buffer[length++]=std::toupper(ch);
+      if (length+1<sizeof(buffer)) buffer[length++]=static_cast<char>(ch);
       else overflow=true;
     }
   }
@@ -291,6 +375,10 @@ void setup() {
   windowScreen.begin();
   Serial.printf("WINDOW_RESTORE: load=%u scene=%s speed=%s\n",static_cast<unsigned>(windowScreen.loadResult()),
                 deskos::sceneName(windowScreen.selected()),deskos::speedName(windowScreen.speed()));
+  weatherService.begin();  // Loads location + last good reading (offline fallback).
+  logWeatherState(true);
+  network.begin();         // Non-blocking; the Wi-Fi driver starts only if credentials exist.
+  logNetState();
   printHelp();
   registerShell();
   haveCalibration=touchcal::load(calibration);
@@ -306,7 +394,17 @@ void setup() {
 void loop() {
   const uint32_t now=millis();
   focusService.update(); // Always runs, including Home, other apps, CAL, TEST and DIAG.
+  network.update(now);      // Status polling only; never waits for Wi-Fi.
+  if (network.connected()) {
+    if (!timeService.started()) timeService.start();
+    if (!httpsFetcherStarted) {
+      httpsFetcherStarted=httpsFetcher.begin();  // Background HTTPS task, created once on first IP.
+      Serial.printf("HTTPS_TASK: %s stack=%lu\n",httpsFetcherStarted?"STARTED":"CREATE_FAILED",
+                    static_cast<unsigned long>(deskos::HttpsFetchTask::STACK_BYTES));
+    }
+  }
   missionService.update();  // Same loop: consumes a committed FocusCompleted immediately.
+  weatherService.update();  // Polls the HTTPS task; scheduling/backoff/timeout only.
   serviceSerial(now);
   const TouchFrame frame=touch.poll(now);
   logTouch(frame,now);
@@ -334,6 +432,7 @@ void loop() {
   }
   logFocusState();
   logMissionState();
+  logWeatherState();
   if (now-lastHeapLog>=5000) {
     lastHeapLog=now;
     const char* activeApp=appManager.activeId()==deskos::AppId::None?"NONE":

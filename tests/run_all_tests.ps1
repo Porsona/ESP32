@@ -20,6 +20,8 @@ $suites = [ordered]@{
                     'src/ui/PetSprites.cpp', 'src/apps/PixelPetScreen.cpp')
     'window_tests' = @('tests/window_tests.cpp', 'src/services/WindowSettings.cpp', 'src/ui/WindowAnimator.cpp',
                        'src/apps/PixelWindowScreen.cpp')
+    'weather_tests' = @('tests/weather_tests.cpp', 'src/services/WeatherModel.cpp', 'src/services/WeatherService.cpp',
+                        'src/ui/WeatherSprites.cpp', 'src/apps/WeatherScreen.cpp')
 }
 Push-Location $projectRoot
 $previousPath = $env:PATH
