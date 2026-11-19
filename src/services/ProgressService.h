@@ -47,6 +47,7 @@ class ProgressService {
  private:
   friend class FocusSessionService;
   friend class DailyMissionService;
+  friend struct ProgressTestAccess;  // Defined only by host tests.
   void adopt(const ProgressData& committed) { data_=committed; }
   void adoptLedger(const RewardLedger& committed) { ledger_=committed; }
   ProgressData data_{};

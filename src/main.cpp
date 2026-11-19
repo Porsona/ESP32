@@ -18,10 +18,12 @@
 #include "storage/MissionStorageNVS.h"
 #include "services/FocusCompletionAdapter.h"
 #include "apps/DailyMissionsScreen.h"
+#include "storage/BlobStoreNVS.h"
+#include "apps/PixelPetScreen.h"
 
 DisplayHAL display;
 TouchHAL touch;
-constexpr char FIRMWARE_VERSION[] = "M2_MISSIONS_01";
+constexpr char FIRMWARE_VERSION[] = "M3_PET_01";
 DiagnosticScreen diagnostics(display, FIRMWARE_VERSION);
 TouchCalibrationScreen calibrationScreen(display);
 TouchTestScreen touchTest(display);
@@ -40,6 +42,9 @@ deskos::FocusCompletionAdapter focusCompletions(focusService,progressService);
 // No IDaySource in M2: quest days advance only via NEW DAY (TimeService/NTP is M5).
 deskos::DailyMissionService missionService(focusClock,missionStorage,progressService,focusCompletions);
 deskos::DailyMissionsScreen missionsScreen(pixelRenderer,appManager,missionService,progressService);
+deskos::BlobStoreNVS blobStore;  // Shared by Pet (and later Window/Weather) settings records.
+deskos::PetService petService(blobStore,progressService,focusClock);
+deskos::PixelPetScreen petScreen(pixelRenderer,appManager,petService);
 
 enum class View { Calibration, Test, Diagnostics, Shell };
 View view=View::Calibration;
@@ -138,16 +143,26 @@ void showShell(uint32_t now) {
   appManager.home();
 }
 
+deskos::IApp& screenFor(deskos::AppId id) {
+  switch (id) {
+    case deskos::AppId::Pet: return petScreen;
+    case deskos::AppId::Focus: return focusScreen;
+    case deskos::AppId::Missions: return missionsScreen;
+    default: return placeholderScreen;  // Apps not built yet keep the M0 placeholder.
+  }
+}
+
 void registerShell() {
   shellReady=appManager.registerApp(deskos::AppId::Home,homeScreen);
+  uint8_t placeholders=0;
   for (uint8_t id=1;id<deskos::APP_COUNT;++id) {
     const auto appId=static_cast<deskos::AppId>(id);
-    deskos::IApp& screen=appId==deskos::AppId::Focus?static_cast<deskos::IApp&>(focusScreen):
-                         appId==deskos::AppId::Missions?static_cast<deskos::IApp&>(missionsScreen):
-                                                        static_cast<deskos::IApp&>(placeholderScreen);
+    deskos::IApp& screen=screenFor(appId);
+    if (&screen==&placeholderScreen) ++placeholders;
     if (!appManager.registerApp(appId,screen)) shellReady=false;
   }
-  Serial.printf("SHELL_REGISTRY: %s ids=7 screen_instances=4\n",shellReady?"READY":"FAILED");
+  Serial.printf("SHELL_REGISTRY: %s ids=7 dedicated_apps=%u placeholders=%u\n",shellReady?"READY":"FAILED",
+                static_cast<unsigned>(deskos::APP_COUNT-1-placeholders),static_cast<unsigned>(placeholders));
 }
 
 void dispatchShellTouch(const TouchFrame& frame) {
@@ -177,7 +192,15 @@ void printCalibration() {
 }
 
 void printHelp() {
-  Serial.println("COMMANDS: HOME | BACK | CAL | RETRY | TEST | DIAG | NEXT | STATUS | MISSIONS | QTITLE <ID> <TITLE> | HELP (newline)");
+  Serial.println("COMMANDS: HOME | BACK | CAL | RETRY | TEST | DIAG | NEXT | STATUS | MISSIONS | QTITLE <ID> <TITLE> | PET | HELP (newline)");
+}
+
+void logPetState() {
+  Serial.printf("PET: load=%u level=%u xp=%lu next=%lu style=%s pets=%lu last_seen_xp=%lu\n",
+                static_cast<unsigned>(petService.loadResult()),static_cast<unsigned>(petService.level()),
+                static_cast<unsigned long>(petService.xp()),static_cast<unsigned long>(petService.nextLevelXP()),
+                deskos::styleName(petService.style()),static_cast<unsigned long>(petService.petCount()),
+                static_cast<unsigned long>(petService.record().lastSeenXP));
 }
 
 void command(const char* line, uint32_t now) {
@@ -193,8 +216,9 @@ void command(const char* line, uint32_t now) {
     if (view!=View::Diagnostics) showDiagnostics(now);
     else diagnostics.nextTest(now);
   } else if (!std::strcmp(line,"STATUS")) {
-    printCalibration(); lastFocusRevision=0; logFocusState(); logMissionState(true);
+    printCalibration(); lastFocusRevision=0; logFocusState(); logMissionState(true); logPetState();
   } else if (!std::strcmp(line,"MISSIONS")) logMissionState(true);
+  else if (!std::strcmp(line,"PET")) logPetState();
   else if (!std::strncmp(line,"QTITLE ",7)) titleCommand(line+7);
   else printHelp();
 }
@@ -258,6 +282,8 @@ void setup() {
                 static_cast<unsigned long>(progressService.totalXP()));
   lastMissionGrants=progressService.ledger().grantedCount;
   logMissionState(true);
+  petService.begin();  // Cosmetic record only; level is derived from shared XP.
+  logPetState();
   printHelp();
   registerShell();
   haveCalibration=touchcal::load(calibration);

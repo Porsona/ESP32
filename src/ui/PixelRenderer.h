@@ -3,6 +3,10 @@
 #include "UITheme.h"
 
 namespace deskos {
+// Character sprites: '.' background, '#' outline, 'o' body, '+' shade,
+// '*' accent, 'w' white, 'g' gold. Unknown characters draw as background.
+struct SpritePalette { uint16_t background,outline,body,shade,accent,white,gold; };
+
 class PixelRenderer {
  public:
   explicit PixelRenderer(DisplayHAL& display) : display_(display) {}
@@ -15,6 +19,10 @@ class PixelRenderer {
   // 8x8 one-bit glyph, each set bit drawn as a scale x scale square (flash constant).
   void drawGlyph8(const uint8_t rows[8],int16_t x,int16_t y,uint8_t scale,uint16_t ink);
   void drawCheckbox(const Rect& rect,bool checked);
+  // Every cell is painted (background included), so redrawing a frame over the
+  // previous one never flickers and needs no framebuffer.
+  void drawCharSprite(const char* const* rows,uint8_t width,uint8_t height,int16_t x,int16_t y,
+                      uint8_t scale,const SpritePalette& palette);
   void drawText(const char* text,int16_t x,int16_t y,uint8_t size=1,
                 uint16_t ink=theme::White,uint16_t background=theme::Background,uint8_t datum=TL_DATUM);
   void drawStatusBar(const char* tag);

@@ -100,6 +100,44 @@ void PixelRenderer::drawCheckbox(const Rect& r,bool checked) {
   if (checked && scale) drawGlyph8(CHECK,r.x+(r.w-8*scale)/2,r.y+(r.h-8*scale)/2,scale,theme::Background);
 }
 
+namespace {
+uint16_t spriteColor(char c,const SpritePalette& p) {
+  switch (c) {
+    case '#': return p.outline;
+    case 'o': return p.body;
+    case '+': return p.shade;
+    case '*': return p.accent;
+    case 'w': return p.white;
+    case 'g': return p.gold;
+    default: return p.background;
+  }
+}
+}  // namespace
+
+void PixelRenderer::drawCharSprite(const char* const* rows,uint8_t width,uint8_t height,int16_t x,int16_t y,
+                                   uint8_t scale,const SpritePalette& palette) {
+  if (!rows || !scale) return;
+  auto& tft=display_.graphics();
+  for (uint8_t row=0;row<height;++row) {
+    const char* line=rows[row];
+    uint8_t col=0;
+    bool ended=!line;
+    while (col<width) {  // One fillRect per same-colour run.
+      const char c=ended?'.':line[col];
+      if (!c) { ended=true; continue; }
+      const uint16_t color=spriteColor(c,palette);
+      const uint8_t first=col;
+      while (col<width) {
+        const char next=ended?'.':line[col];
+        if (!next) { ended=true; continue; }
+        if (spriteColor(next,palette)!=color) break;
+        ++col;
+      }
+      tft.fillRect(x+first*scale,y+row*scale,(col-first)*scale,scale,color);
+    }
+  }
+}
+
 void PixelRenderer::drawStatusBar(const char* tag) {
   auto& tft=display_.graphics();
   tft.fillRect(0,0,320,32,theme::Panel);
