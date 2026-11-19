@@ -20,10 +20,11 @@
 #include "apps/DailyMissionsScreen.h"
 #include "storage/BlobStoreNVS.h"
 #include "apps/PixelPetScreen.h"
+#include "apps/PixelWindowScreen.h"
 
 DisplayHAL display;
 TouchHAL touch;
-constexpr char FIRMWARE_VERSION[] = "M3_PET_01";
+constexpr char FIRMWARE_VERSION[] = "M4_WINDOW_01";
 DiagnosticScreen diagnostics(display, FIRMWARE_VERSION);
 TouchCalibrationScreen calibrationScreen(display);
 TouchTestScreen touchTest(display);
@@ -45,6 +46,8 @@ deskos::DailyMissionsScreen missionsScreen(pixelRenderer,appManager,missionServi
 deskos::BlobStoreNVS blobStore;  // Shared by Pet (and later Window/Weather) settings records.
 deskos::PetService petService(blobStore,progressService,focusClock);
 deskos::PixelPetScreen petScreen(pixelRenderer,appManager,petService);
+deskos::NoWindowContext windowContext;  // No trusted clock yet: AUTO shows NO CLOCK.
+deskos::PixelWindowScreen windowScreen(pixelRenderer,appManager,blobStore,windowContext);
 
 enum class View { Calibration, Test, Diagnostics, Shell };
 View view=View::Calibration;
@@ -146,6 +149,7 @@ void showShell(uint32_t now) {
 deskos::IApp& screenFor(deskos::AppId id) {
   switch (id) {
     case deskos::AppId::Pet: return petScreen;
+    case deskos::AppId::Window: return windowScreen;
     case deskos::AppId::Focus: return focusScreen;
     case deskos::AppId::Missions: return missionsScreen;
     default: return placeholderScreen;  // Apps not built yet keep the M0 placeholder.
@@ -284,6 +288,9 @@ void setup() {
   logMissionState(true);
   petService.begin();  // Cosmetic record only; level is derived from shared XP.
   logPetState();
+  windowScreen.begin();
+  Serial.printf("WINDOW_RESTORE: load=%u scene=%s speed=%s\n",static_cast<unsigned>(windowScreen.loadResult()),
+                deskos::sceneName(windowScreen.selected()),deskos::speedName(windowScreen.speed()));
   printHelp();
   registerShell();
   haveCalibration=touchcal::load(calibration);

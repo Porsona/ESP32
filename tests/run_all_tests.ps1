@@ -18,6 +18,8 @@ $core = @('src/services/ProgressService.cpp', 'src/core/AppManager.cpp', 'src/ui
 $suites = [ordered]@{
     'pet_tests' = @('tests/pet_tests.cpp', 'src/services/PetModel.cpp', 'src/services/PetService.cpp',
                     'src/ui/PetSprites.cpp', 'src/apps/PixelPetScreen.cpp')
+    'window_tests' = @('tests/window_tests.cpp', 'src/services/WindowSettings.cpp', 'src/ui/WindowAnimator.cpp',
+                       'src/apps/PixelWindowScreen.cpp')
 }
 Push-Location $projectRoot
 $previousPath = $env:PATH
