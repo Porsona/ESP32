@@ -1,0 +1,142 @@
+﻿
+.pio/build/cyd_ili9341/firmware.elf:     file format elf32-xtensa-le
+
+
+Disassembly of section .iram0.vectors:
+
+Disassembly of section .iram0.text:
+
+Disassembly of section .flash.text:
+
+400d15e8 <_Z5setupv>:
+400d15e8:	006136        	entry	a1, 48
+400d15eb:	70a032        	movi	a3, 112
+400d15ee:	fa9521        	l32r	a2, 400d0044 <_stext+0x24>
+400d15f1:	1139      	s32i.n	a3, a1, 4
+400d15f3:	fa9931        	l32r	a3, 400d0058 <_stext+0x38>
+400d15f6:	fe7c      	movi.n	a14, -1
+400d15f8:	fa96c1        	l32r	a12, 400d0050 <_stext+0x30>
+400d15fb:	fa96b1        	l32r	a11, 400d0054 <_stext+0x34>
+400d15fe:	0f0c      	movi.n	a15, 0
+400d1600:	0edd      	mov.n	a13, a14
+400d1602:	0139      	s32i.n	a3, a1, 0
+400d1604:	02ad      	mov.n	a10, a2
+400d1606:	01eae5        	call8	400d34b4 <_ZN14HardwareSerial5beginEmjaabmh>
+400d1609:	fa94b1        	l32r	a11, 400d005c <_stext+0x3c>
+400d160c:	02ad      	mov.n	a10, a2
+400d160e:	021e25        	call8	400d37f0 <_ZN5Print7printlnEPKc>
+400d1611:	3b0c      	movi.n	a11, 3
+400d1613:	5a1c      	movi.n	a10, 21
+400d1615:	024c25        	call8	400d3ad8 <__pinMode>
+400d1618:	1b0c      	movi.n	a11, 1
+400d161a:	5a1c      	movi.n	a10, 21
+400d161c:	025965        	call8	400d3bb4 <__digitalWrite>
+400d161f:	fa8031        	l32r	a3, 400d0020 <_stext>
+400d1622:	0b0c      	movi.n	a11, 0
+400d1624:	03ad      	mov.n	a10, a3
+400d1626:	0100e5        	call8	400d2634 <_ZN8TFT_eSPI4initEh>
+400d1629:	03ad      	mov.n	a10, a3
+400d162b:	1b0c      	movi.n	a11, 1
+400d162d:	00eea5        	call8	400d2518 <_ZN8TFT_eSPI11setRotationEh>
+400d1630:	0c0c      	movi.n	a12, 0
+400d1632:	0cbd      	mov.n	a11, a12
+400d1634:	03ad      	mov.n	a10, a3
+400d1636:	21f565        	call8	400f358c <_ZN8TFT_eSPI11setTextWrapEbb>
+400d1639:	026c65        	call8	400d3d00 <millis>
+400d163c:	fa8931        	l32r	a3, 400d0060 <_stext+0x40>
+400d163f:	fa89b1        	l32r	a11, 400d0064 <_stext+0x44>
+400d1642:	03a9      	s32i.n	a10, a3, 0
+400d1644:	02ad      	mov.n	a10, a2
+400d1646:	021aa5        	call8	400d37f0 <_ZN5Print7printlnEPKc>
+400d1649:	fa8741        	l32r	a4, 400d0068 <_stext+0x48>
+400d164c:	7c2c      	movi.n	a12, 39
+400d164e:	04ad      	mov.n	a10, a4
+400d1650:	1e2c      	movi.n	a14, 33
+400d1652:	0d2c      	movi.n	a13, 32
+400d1654:	9b1c      	movi.n	a11, 25
+400d1656:	0011a5        	call8	400d1770 <_ZN8SPIClass5beginEaaaa>
+400d1659:	fa8431        	l32r	a3, 400d006c <_stext+0x4c>
+400d165c:	04bd      	mov.n	a11, a4
+400d165e:	03ad      	mov.n	a10, a3
+400d1660:	140c      	movi.n	a4, 1
+400d1662:	0191a5        	call8	400d2f7c <_ZN19XPT2046_Touchscreen5beginER8SPIClass>
+400d1665:	034342        	s8i	a4, a3, 3
+400d1668:	fa78c1        	l32r	a12, 400d0048 <_stext+0x28>
+400d166b:	002a56        	bnez	a10, 400d1671 <_Z5setupv+0x89>
+400d166e:	fa77c1        	l32r	a12, 400d004c <_stext+0x2c>
+400d1671:	fa7fb1        	l32r	a11, 400d0070 <_stext+0x50>
+400d1674:	20a220        	or	a10, a2, a2
+400d1677:	020b65        	call8	400d372c <_ZN5Print6printfEPKcz>
+400d167a:	fa7ea1        	l32r	a10, 400d0074 <_stext+0x54>
+400d167d:	01aee5        	call8	400d316c <_ZN8EspClass11getFreeHeapEv>
+400d1680:	fa7eb1        	l32r	a11, 400d0078 <_stext+0x58>
+400d1683:	0acd      	mov.n	a12, a10
+400d1685:	02ad      	mov.n	a10, a2
+400d1687:	020a65        	call8	400d372c <_ZN5Print6printfEPKcz>
+400d168a:	f01d      	retw.n
+
+.pio/build/cyd_ili9341/firmware.elf:     file format elf32-xtensa-le
+
+
+Disassembly of section .iram0.vectors:
+
+Disassembly of section .iram0.text:
+
+Disassembly of section .flash.text:
+
+400d168c <_Z4loopv>:
+400d168c:	006136        	entry	a1, 48
+400d168f:	026725        	call8	400d3d00 <millis>
+400d1692:	fa7a31        	l32r	a3, 400d007c <_stext+0x5c>
+400d1695:	0a2d      	mov.n	a2, a10
+400d1697:	000342        	l8ui	a4, a3, 0
+400d169a:	44dc      	bnez.n	a4, 400d16b2 <_Z4loopv+0x26>
+400d169c:	fa7141        	l32r	a4, 400d0060 <_stext+0x40>
+400d169f:	0488      	l32i.n	a8, a4, 0
+400d16a1:	e7a342        	movi	a4, 0x3e7
+400d16a4:	c08a80        	sub	a8, a10, a8
+400d16a7:	07b487        	bgeu	a4, a8, 400d16b2 <_Z4loopv+0x26>
+400d16aa:	140c      	movi.n	a4, 1
+400d16ac:	004342        	s8i	a4, a3, 0
+400d16af:	fff1e5        	call8	400d15cc <_Z14applyColorLockv>
+400d16b2:	fa6e41        	l32r	a4, 400d006c <_stext+0x4c>
+400d16b5:	04ad      	mov.n	a10, a4
+400d16b7:	01a9a5        	call8	400d3150 <_ZN19XPT2046_Touchscreen7touchedEv>
+400d16ba:	5aac      	beqz.n	a10, 400d16e3 <_Z4loopv+0x57>
+400d16bc:	fa7131        	l32r	a3, 400d0080 <_stext+0x60>
+400d16bf:	77a092        	movi	a9, 119
+400d16c2:	0388      	l32i.n	a8, a3, 0
+400d16c4:	c08280        	sub	a8, a2, a8
+400d16c7:	18b987        	bgeu	a9, a8, 400d16e3 <_Z4loopv+0x57>
+400d16ca:	04ad      	mov.n	a10, a4
+400d16cc:	01a665        	call8	400d3134 <_ZN19XPT2046_Touchscreen8getPointEv>
+400d16cf:	23eb80        	sext	a14, a11, 15
+400d16d2:	31d0a0        	srai	a13, a10, 16
+400d16d5:	23ca80        	sext	a12, a10, 15
+400d16d8:	fa6bb1        	l32r	a11, 400d0084 <_stext+0x64>
+400d16db:	fa5aa1        	l32r	a10, 400d0044 <_stext+0x24>
+400d16de:	0204e5        	call8	400d372c <_ZN5Print6printfEPKcz>
+400d16e1:	0329      	s32i.n	a2, a3, 0
+400d16e3:	fa0c      	movi.n	a10, 15
+400d16e5:	026325        	call8	400d3d18 <delay>
+400d16e8:	f01d      	retw.n
+
+.pio/build/cyd_ili9341/firmware.elf:     file format elf32-xtensa-le
+
+
+Disassembly of section .iram0.vectors:
+
+Disassembly of section .iram0.text:
+
+Disassembly of section .flash.text:
+
+400d15cc <_Z14applyColorLockv>:
+400d15cc:	004136        	entry	a1, 32
+400d15cf:	fa94a1        	l32r	a10, 400d0020 <_stext>
+400d15d2:	00a0b2        	movi	a11, 0
+400d15d5:	017ce5        	call8	400d2da4 <_ZN8TFT_eSPI13invertDisplayEb>
+400d15d8:	fff365        	call8	400d1510 <_Z13drawColorTestv>
+400d15db:	fa99b1        	l32r	a11, 400d0040 <_stext+0x20>
+400d15de:	fa99a1        	l32r	a10, 400d0044 <_stext+0x24>
+400d15e1:	0220e5        	call8	400d37f0 <_ZN5Print7printlnEPKc>
+400d15e4:	f01d      	retw.n
