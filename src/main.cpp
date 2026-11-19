@@ -11,10 +11,13 @@
 #include "ui/PixelRenderer.h"
 #include "apps/HomeScreen.h"
 #include "apps/PlaceholderScreen.h"
+#include "hal/FocusClock.h"
+#include "storage/FocusStorageNVS.h"
+#include "apps/FocusQuestScreen.h"
 
 DisplayHAL display;
 TouchHAL touch;
-constexpr char FIRMWARE_VERSION[] = "M0_SHELL_01";
+constexpr char FIRMWARE_VERSION[] = "M1_FOCUS_01";
 DiagnosticScreen diagnostics(display, FIRMWARE_VERSION);
 TouchCalibrationScreen calibrationScreen(display);
 TouchTestScreen touchTest(display);
@@ -23,6 +26,11 @@ deskos::AppManager appManager;
 deskos::PixelRenderer pixelRenderer(display);
 deskos::HomeScreen homeScreen(pixelRenderer,appManager);
 deskos::PlaceholderScreen placeholderScreen(pixelRenderer,appManager);
+deskos::FocusClock focusClock;
+deskos::FocusStorageNVS focusStorage;
+deskos::ProgressService progressService;
+deskos::FocusSessionService focusService(focusClock,focusStorage,progressService);
+deskos::FocusQuestScreen focusScreen(pixelRenderer,appManager,focusService,progressService);
 
 enum class View { Calibration, Test, Diagnostics, Shell };
 View view=View::Calibration;
@@ -30,6 +38,19 @@ bool haveCalibration=false, diagnosticsWaitForRelease=true, observedRaw=false;
 bool shellReady=false, shellWaitForRelease=true;
 uint32_t lastTouchLog=0, lastHeapLog=0;
 uint32_t lastShellUpdate=0;
+uint32_t lastFocusRevision=0;
+
+void logFocusState() {
+  if (lastFocusRevision==focusService.revision()) return;
+  lastFocusRevision=focusService.revision();
+  const auto& progress=progressService.data();
+  Serial.printf("FOCUS: ms=%lu mode=%s state=%s remaining_ms=%lu xp=%lu sessions=%lu id=%lu rewarded_id=%lu save_pending=%u error=%s\n",
+    static_cast<unsigned long>(millis()),deskos::focusModeName(focusService.mode()),
+    deskos::focusStateName(focusService.state()),static_cast<unsigned long>(focusService.remainingMs()),
+    static_cast<unsigned long>(progress.totalXP),static_cast<unsigned long>(progress.completedFocusSessions),
+    static_cast<unsigned long>(progress.currentSessionId),static_cast<unsigned long>(progress.lastRewardedSessionId),
+    focusService.savePending()?1U:0U,deskos::focusErrorName(focusService.error()));
+}
 
 const char* viewName() {
   return view==View::Calibration?"CAL":view==View::Test?"TEST":view==View::Shell?"SHELL":"DIAG";
@@ -70,9 +91,12 @@ void showShell(uint32_t now) {
 void registerShell() {
   shellReady=appManager.registerApp(deskos::AppId::Home,homeScreen);
   for (uint8_t id=1;id<deskos::APP_COUNT;++id) {
-    if (!appManager.registerApp(static_cast<deskos::AppId>(id),placeholderScreen)) shellReady=false;
+    const auto appId=static_cast<deskos::AppId>(id);
+    deskos::IApp& screen=appId==deskos::AppId::Focus?static_cast<deskos::IApp&>(focusScreen):
+                                                               static_cast<deskos::IApp&>(placeholderScreen);
+    if (!appManager.registerApp(appId,screen)) shellReady=false;
   }
-  Serial.printf("SHELL_REGISTRY: %s ids=7 screen_instances=2\n",shellReady?"READY":"FAILED");
+  Serial.printf("SHELL_REGISTRY: %s ids=7 screen_instances=3\n",shellReady?"READY":"FAILED");
 }
 
 void dispatchShellTouch(const TouchFrame& frame) {
@@ -113,7 +137,9 @@ void command(const char* line, uint32_t now) {
   else if (!std::strcmp(line,"NEXT")) {
     if (view!=View::Diagnostics) showDiagnostics(now);
     else diagnostics.nextTest(now);
-  } else if (!std::strcmp(line,"STATUS")) printCalibration();
+  } else if (!std::strcmp(line,"STATUS")) {
+    printCalibration(); lastFocusRevision=0; logFocusState();
+  }
   else Serial.println("COMMANDS: HOME | BACK | CAL | RETRY | TEST | DIAG | NEXT | STATUS | HELP (newline)");
 }
 
@@ -162,6 +188,12 @@ void setup() {
   Serial.printf("Heap: %u bytes\n", ESP.getFreeHeap());
   display.applyColorConfig();
   Serial.println("DISPLAY_CONFIG: INVERT_ON");
+  focusService.begin();
+  Serial.printf("FOCUS_RESTORE: result=%u running_restored_as_paused=%u focus_ms=%lu break_ms=%lu\n",
+                static_cast<unsigned>(focusService.loadResult()),focusService.restoredRunning()?1U:0U,
+                static_cast<unsigned long>(deskos::FOCUS_DURATION_MS),
+                static_cast<unsigned long>(deskos::BREAK_DURATION_MS));
+  logFocusState();
   Serial.println("COMMANDS: HOME | BACK | CAL | RETRY | TEST | DIAG | NEXT | STATUS | HELP (newline)");
   registerShell();
   haveCalibration=touchcal::load(calibration);
@@ -176,6 +208,7 @@ void setup() {
 
 void loop() {
   const uint32_t now=millis();
+  focusService.update(); // Always runs, including Home, other apps, CAL, TEST and DIAG.
   serviceSerial(now);
   const TouchFrame frame=touch.poll(now);
   logTouch(frame,now);
@@ -201,6 +234,7 @@ void loop() {
     const uint32_t deltaMs=now-lastShellUpdate; lastShellUpdate=now;
     appManager.update(deltaMs);
   }
+  logFocusState();
   if (now-lastHeapLog>=5000) {
     lastHeapLog=now;
     const char* activeApp=appManager.activeId()==deskos::AppId::None?"NONE":

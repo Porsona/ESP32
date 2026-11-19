@@ -1,188 +1,156 @@
-# CYD DeskOS Shell v0.3 — Architecture
+# CYD DeskOS — Architecture M1
 
-Firmware: **M0_SHELL_01**, ngày 2026-11-19 (Asia/Saigon).
+Firmware **M1_FOCUS_01**, 2026-11-19, environment `cyd_ili9341`.
+M0.0–M0.3 được người dùng nghiệm thu; M0.3 PASS 8/8. M1 đã build và chạy test
+host; nghiệm thu ESP32 **PENDING**. Xem [TEST_REPORT_M1.md](TEST_REPORT_M1.md).
 
-M0.0/M0.1/M0.2 đã được người dùng nghiệm thu trên ESP32-2432S028R.
-M0.3 hiện mới Clean/Build SUCCESS trên máy; chưa Upload, chưa có kết quả phần cứng.
+## Baseline và phần cứng
 
-## Baseline và phần giữ nguyên
+Project chưa có Git khi audit. Đã backup 41 file với SHA256.json tại
+`docs/baselines/M0_STABLE_before_M1_2026-11-19/`, kiểm tra hash 41/41 khớp,
+sau đó tạo commit `654b069`, annotated tag `m0-stable` và branch
+`feature/m1-focus-quest`. Không ghi đè tag. Kết quả người dùng nằm trong
+[M0_ACCEPTANCE.md](M0_ACCEPTANCE.md); báo cáo M0 cũ giữ như lịch sử.
 
-Backup trước thay đổi:
-[M0_TOUCH_CAL_01_verified_before_M0_3_2026-11-19](baselines/M0_TOUCH_CAL_01_verified_before_M0_3_2026-11-19/).
-Có toàn bộ src/include, platformio.ini, BIN/ELF/boot images, log, báo cáo,
-SHA256.json và BOARD_CONFIRMATION.md. Hash BIN M0.2:
+Giữ nguyên platformio.ini, board_pins, DisplayHAL, TouchHAL, calibration và
+AppManager: ILI9341_2_DRIVER, GPIO, TFT HSPI, touch VSPI, rotation 1,
+invertDisplay(true), LOAD_GLCD=1, framework và dependencies đã kiểm thử.
+Chỉ một TFT, một Touch và một PixelRenderer dùng chung.
 
-```text
-E924E31902DED52CE1EEA35458047562E4655AFAB9416619922488E34546F912
-```
+Trình tự phần cứng vẫn `display.begin()` → `touch.begin()` →
+`display.applyColorConfig()`: init/rotation một lần, inversion true một lần
+sau touch init. Không thêm lời gọi đảo màu hoặc sửa schema calibration.
 
-Đã đối chiếu hash: toàn bộ module M0.2 cũ **ngoài main.cpp** không đổi, gồm
-DisplayHAL, TouchHAL, TouchTypes, affine/CRC/Preferences store, CalibrationScreen,
-TouchTestScreen và DiagnosticScreen. platformio.ini/board_pins.h không đổi.
-Giữ ILI9341_2_DRIVER, GPIO, TFT HSPI, touch VSPI, rotation 1, inversion true,
-LOAD_GLCD=1, framework và dependency. Không LVGL hoặc instance phần cứng mới.
-
-Backup không chứa bản export NVS của board: agent không đọc/xóa/ghi NVS trên
-thiết bị. Schema/key/version calibration vẫn nguyên; nạp firmware bình thường
-không có bước erase NVS. NVS chỉ ghi khi người dùng hoàn thành CAL như M0.2.
-
-## Các lớp và ownership
+## Ownership và module
 
 ```mermaid
 flowchart TD
-    MAIN[main.cpp: boot, mode, Serial, millis] --> TOUCH[TouchHAL duy nhất]
-    TOUCH --> MAP[TouchCalibration: raw sang pixel]
-    MAP --> EVENT[deskos::TouchEvent: pixel + loại event]
-    EVENT --> MANAGER[AppManager: registry và lifecycle]
-    MANAGER --> HOME[HomeScreen: một instance]
-    MANAGER --> PLACE[PlaceholderScreen: một instance dùng cho 6 ID]
-    HOME --> PIXEL[PixelRenderer + UITheme]
+    MAIN[main.cpp: core loop] --> TIMER[FocusSessionService]
+    CLOCK[FocusClock: millis] --> TIMER
+    TIMER --> PROGRESS[ProgressService: committed XP and IDs]
+    TIMER --> STORE[FocusStorageNVS: one versioned CRC blob]
+    MAIN --> TOUCH[TouchHAL: raw events]
+    TOUCH --> MAP[Existing affine calibration]
+    MAP --> MANAGER[AppManager: pixel events and lifecycle]
+    MANAGER --> HOME[HomeScreen]
+    MANAGER --> FOCUS[FocusQuestScreen]
+    MANAGER --> PLACE[Shared placeholder for five app IDs]
+    FOCUS --> TIMER
+    FOCUS --> PROGRESS
+    HOME --> PIXEL[PixelRenderer]
+    FOCUS --> PIXEL
     PLACE --> PIXEL
-    PIXEL --> DISPLAY[DisplayHAL: TFT duy nhất]
-    MAIN --> RECOVERY[CAL / TEST / DIAG / NEXT]
+    PIXEL --> DISPLAY[DisplayHAL: single TFT]
+    MAIN --> RECOVERY[Existing CAL / TEST / DIAG]
     RECOVERY --> DISPLAY
-    RECOVERY --> NVS[CalibrationStore: schema M0.2 nguyên trạng]
 ```
 
-| File mới | Vai trò |
+| Module | Trách nhiệm |
 | --- | --- |
-| src/core/AppTypes.h | AppId, AppInfo, Rect và sự kiện UI pixel-only |
-| src/core/IApp.h | onEnter/update/render/onTouch/onExit, cờ dirty |
-| src/core/AppManager.h/.cpp | Registry 7 ID, một active app, deferred transition, gesture gate, log |
-| src/ui/UITheme.h | RGB565 palette và layout/hitbox dùng chung cho draw/input |
-| src/ui/PixelRenderer.h/.cpp | Pixel icon/panel/button/text/status bar bằng TFT_eSPI hiện có |
-| src/apps/HomeScreen.h/.cpp | Lưới 6 icon, highlight và dirty regions |
-| src/apps/PlaceholderScreen.h/.cpp | Một màn hình cấu hình theo active ID, BACK/HOME |
+| `src/services/FocusModel.h/.cpp` | Duration 25/5 phút, enums, schema 40 byte, CRC32/validation |
+| `src/services/FocusStorage.h` | Interface clock/storage độc lập Arduino để test logic thật |
+| `src/services/FocusSessionService.h/.cpp` | Timestamp, state machine, checkpoint, commit/retry completion |
+| `src/services/ProgressService.h/.cpp` | XP dùng chung, đếm phiên, cấp ID, chống thưởng trùng |
+| `src/storage/FocusStorageNVS.h/.cpp` | Đọc NVS phân loại lỗi; Preferences ghi blob và đọc lại xác minh |
+| `src/hal/FocusClock.h` | Adapter millis() cho clock interface |
+| `src/apps/FocusQuestScreen.h/.cpp` | View/input; không sở hữu hoặc tự update timer |
+| `src/core/AppManager.h/.cpp` | Registry 7 ID, deferred transition, gesture gate M0 nguyên trạng |
+| `src/ui/PixelRenderer.h/.cpp` | Thêm fillRegion/progress bar; TFT hiện có; banner DESKOS M1 |
+| `src/main.cpp` | Sở hữu service, begin một lần, update mọi loop, registry/log |
+| `tests/` | Source production với fake clock/storage và host draw spy |
 
-main.cpp chỉ thêm orchestration và adapter UI; không chuyển raw vào Home/placeholder.
-Không sửa Touch Calibration hoặc DisplayHAL để tích hợp Shell.
+Registry giữ Home=0, Pet=1, Window=2, Focus=3, Missions=4, PC Monitor=5,
+Weather=6. Chỉ Focus là app thật mới; năm ID khác giữ PlaceholderScreen.
+Có ba screen instance shell; không tạo sáu bản placeholder.
 
-## AppManager và lifecycle
+## Timer và XP
 
-IApp định nghĩa:
-
-```cpp
-void onEnter();
-void update(uint32_t deltaMs);
-void render();
-void onTouch(const deskos::TouchEvent& event);
-void onExit();
+```mermaid
+stateDiagram-v2
+    [*] --> IDLE
+    IDLE --> RUNNING: START Focus / new ID
+    RUNNING --> PAUSED: PAUSE / save remaining
+    PAUSED --> RUNNING: RESUME / same ID
+    RUNNING --> COMPLETED: deadline / commit result and next mode
+    COMPLETED --> RUNNING: START next phase
+    RUNNING --> IDLE: confirmed RESET before deadline
+    PAUSED --> IDLE: RESET
+    COMPLETED --> IDLE: RESET
 ```
 
-Các phương thức là virtual; needsRender() dùng cờ dirty để không render mỗi loop.
-Registry là mảng cố định 7 con trỏ IApp, không vector/map/String hoặc new mỗi trang.
-ID Home trỏ tới HomeScreen; sáu ID còn lại cùng trỏ tới một PlaceholderScreen.
-AppInfo/glyph là dữ liệu const; không tạo sáu bản giao diện hoặc sáu framebuffer.
+COMPLETED mô tả pha vừa kết thúc; mode và remainingMs đã là pha tiếp theo
+chờ START. Hết Focus: Break 05:00, +25 XP và sessions +1. Hết Break: Focus
+25:00, không thưởng XP. Không tự START hoặc Skip. RESET về Focus IDLE 25:00,
+giữ XP/sessions và ID đã dùng. Pause/Resume giữ ID, không thưởng XP.
+Nếu đã đủ thời gian ngay khi nhận Pause/Reset, deadline được xử lý trước.
 
-| ID | Ứng dụng | Label |
-| --- | --- | --- |
-| 0 | DeskOS Home | HOME |
-| 1 | Pixel Pet | PET |
-| 2 | Pixel Window | WINDOW |
-| 3 | Focus Quest | FOCUS |
-| 4 | Daily Missions | MISSIONS |
-| 5 | PC Monitor | PC MON |
-| 6 | Living Weather | WEATHER |
+`remaining = savedRemaining - uint32_t(now - anchor)` chặn về 0; không đếm
+loop hoặc trừ từng giây. Checkpoint thành công neo timestamp mới. Phép trừ
+unsigned đã test qua rollover. Firmware luôn 25/5 phút, không có short-duration mode.
 
-`open(id)` chỉ xếp pending ID. Ở update kế tiếp, AppManager hủy capture cũ,
-gọi onExit() của app cũ, đổi active ID/con trỏ, gọi onEnter() app mới, update và
-render nếu dirty. Không chuyển lifecycle ngay giữa callback onTouch().
-Placeholder đọc active ID trong onEnter(), nên dùng chung instance vẫn nhận
-đúng icon/tên. Nếu đã ở cùng ID thì không gọi lại lifecycle hoặc init.
+Core gọi `focusService.update()` trước routing view, độc lập AppManager.
+Home, năm placeholder, CAL/TEST/DIAG và suspend không dừng timer.
+FocusQuestScreen::onExit chỉ hủy highlight/confirmation; quay lại đọc timer
+hiện tại. Không có vòng đếm giờ riêng trong screen.
 
-BACK và HOME từ mọi placeholder đều về Home: Shell chỉ có một tầng, chưa có
-history stack của app con. Trên Home, BACK bị vô hiệu hóa; HOME là thao tác giữ
-ở Home. Đây là navigation Shell, chưa phải chức năng thực tế của sáu ứng dụng.
+ProgressService là nguồn committed duy nhất: totalXP, completedFocusSessions,
+currentSessionId, lastRewardedSessionId. START Focus cấp ID tăng dần; Break/
+Resume không cấp ID. Thưởng chỉ cho current ID chưa được thưởng; ID cũ không
+thể cộng lại. Có guard tràn số. API read-only sẵn cho milestone sau.
 
-Khi vào CAL/TEST/DIAG, main gọi suspend(): cancel input và onExit() trước khi
-nhường màn hình cho recovery. Chỉ mode hiện tại được update/render. HOME/BACK
-qua Serial trở về Home nếu có map hợp lệ, không thì vào CAL.
+## Storage và lỗi
 
-## Layout và PixelRenderer
+Namespace mới `deskos-focus`, key `state`; một blob 40 byte chứa timer, XP,
+count, session IDs, magic/version/size, reserved, generation và CRC32.
+putBytes commit toàn record, rồi đọc lại/so sánh; không ghi XP/dedup ID ở key
+rời. Không clear/remove/erase; `cyd-touch/affine` và schema M0.2 giữ nguyên.
 
-| Vùng | Pixel |
-| --- | --- |
-| Status bar | y=0..31, DESKOS v0.3 + tag tĩnh |
-| Content | y=32..199 |
-| Navigation | y=200..239 |
+Lưu START/PAUSE/RESUME/RESET/COMPLETE, checkpoint mỗi >=60 giây RUNNING.
+Không ghi khi render/đổi trang hoặc mỗi giây. Checkpoint lỗi vẫn giữ timer
+RAM chạy đúng; không retry trước 60 giây kế tiếp.
 
-Home có 6 card 96×72, tọa độ trái trên:
-(8,40), (112,40), (216,40), (8,120), (112,120), (216,120).
-Icon 16×16 tự vẽ bằng bảng bit, scale 2 thành 32×32; label GLCD 1 size 1.
-BACK=(0,200,156,40), HOME=(164,200,156,40); hitbox cao đủ 40 px.
-Draw và hit test dùng cùng Rect, không có bộ tọa độ thứ hai.
+Completion ghi thất bại/không chắc chắn: cache chính snapshot timer+XP+ID,
+UI SAVE PENDING, khóa START/RESET và retry cùng record mỗi 5 giây. Không tính
+thưởng lại; Progress committed chỉ được publish sau khi xác minh. Home/Back
+vẫn hoạt động. Ghi thao tác thường lỗi: STORAGE_WRITE, giữ trạng thái RAM cũ.
 
-Theme RGB gốc chuyển sang RGB565 thông thường, không đổi cấu hình RGB order:
+Boot RUNNING → PAUSED ở checkpoint cuối, không tính thời gian tắt nguồn và
+không ghi chỉ vì boot. PAUSED/IDLE/COMPLETED giữ nguyên. Mất nguồn khi ghi
+completion: record hợp lệ cũ yêu cầu resume phần chưa lưu; record mới đã có
+XP/dedup nên không thưởng lần hai. Thiết kế này đã test với fake storage;
+power-cut/NVS vật lý vẫn PENDING.
 
-| Màu | Hex RGB |
-| --- | --- |
-| Background | #171329 |
-| Panel | #43355D |
-| Mint | #72E6BA |
-| Gold | #F3D37A |
-| Rose | #F28FAB |
+Thiếu record: Focus 25:00, 0 XP. Sai CRC/version/shape: INVALID_RESTORE,
+fallback mặc định, chưa ghi đè record đến thao tác lưu chủ động của người dùng;
+không đoán XP đã mất. Read I/O lỗi: STORAGE_READ, khóa nút timer để không
+ghi đè XP chưa đọc được; reboot sau khi xử lý lỗi để đọc lại.
 
-Panel viền pixel cắt góc; pressed dùng nền Mint và nội dung tối để tương phản.
-Placeholder có icon scale 3, tên đầy đủ, COMING SOON, BACK/HOME.
-Text luôn dùng font GLCD 1 size 1/2 đã bật; không tải font mới.
-Không hiển thị giờ hoặc Wi-Fi giả. Không animation phức tạp.
+Checkpoint khỏe thường mất tối đa khoảng 60 giây công việc cộng độ trễ loop/
+ghi khi mất nguồn. Lỗi ghi kéo dài có thể làm checkpoint cũ hơn 60 giây;
+không cam kết giới hạn 60 giây trong trường hợp đó.
 
-PixelRenderer giữ tham chiếu DisplayHAL, không sở hữu TFT/SPI khác.
-Khi đổi trang vẽ lại màn hình. Khi nhấn/thả/cancel, chỉ redraw card hoặc nút
-navigation có dirty bit; idle Shell không redraw toàn màn hình.
-Sáu glyph chỉ là 6×16×2=192 bytes dữ liệu const, không phải framebuffer.
+## UI, input và hiệu năng
 
-## Touch integration
+Palette giữ Background #171329, Panel #43355D, Mint #72E6BA, Gold #F3D37A,
+Rose #F28FAB. Status y=0..31, content y=32..199, navigation y=200..239.
+HOME/BACK giữ Rect/cơ chế M0; Home giữ sáu tile cũ.
 
-Global enum TouchEvent của M0.2 vẫn là bit flags raw-event, không bị đổi API.
-Sự kiện của IApp nằm riêng trong namespace deskos để tránh trùng tên, chỉ chứa
-Press/Move/Release/Tap/Cancel, x/y pixel, timestamp và heldMs.
+Focus có tên, mode/state, XP/sessions, MM:SS GLCD font 1 size 4, progress,
+message, hai nút 148×40 tại (8,152)/(164,152). Vẫn font 1 cho mọi text, không
+tải font khác. RESET RUNNING yêu cầu RESET rồi CONFIRM trong 5 giây;
+CANCEL/timeout hủy. Timer vẫn chạy trong lúc xác nhận.
 
-1. TouchHAL poll/debounce/tap gate giữ nguyên M0.2.
-2. Chỉ khi có calibration hợp lệ mới vào Shell.
-3. Adapter main map raw bằng affine đang có trong RAM, rồi tạo sự kiện pixel-only.
-4. PRESS chỉ highlight; RELEASE tắt highlight. Chỉ TAP của TouchHAL có thể mở trang.
-5. AppManager yêu cầu PRESS→RELEASE→TAP của cùng contact; TAP trùng bị bỏ qua.
-6. Dịch chuyển >8 px (khoảng cách Euclidean từ PRESS) hoặc giữ >700 ms sẽ Cancel.
-   Rời hitbox gốc cũng hủy target dù di chuyển chưa tới ngưỡng, không tái kích hoạt
-   bằng kéo ra rồi vào lại. TouchHAL vẫn có bộ lọc raw movement và TAP cooldown 250 ms.
-7. Sau đổi recovery view/Serial HOME, phải nhả ngón cũ trước khi nhận press mới.
+Input chỉ nhận pixel đã map bằng calibration M0. AppManager giữ PRESS→
+RELEASE→TAP, debounce/cooldown, ngưỡng drag/hold và cancel. Screen tiêu thụ
+target một lần, giữ ý nghĩa từ PRESS để PAUSE không biến thành START nếu pha
+kết thúc trước TAP.
 
-Ngưỡng 8 px phân biệt kéo với jitter nhỏ của tap; cần kiểm tra thực tế với
-calibration/độ nhiễu của board. Chưa khẳng định chống giữ/kéo PASS trên M0.3.
+Full clear chỉ khi vào trang. Timer redraw khi giây đổi; progress khi phần
+nghìn đổi; details/control khi revision/input đổi. Không framebuffer/sprite
+320×240, task timer riêng hoặc cấp phát mỗi frame. NVS I/O đồng bộ tại sự kiện/
+checkpoint; không delay dài/busy-wait. Loop giữ yield và bounded Serial parser.
 
-## Boot, NVS và recovery
-
-Trình tự phần cứng không đổi: display.begin() → touch.begin() → boot log →
-display.applyColorConfig() → nạp record NVS. Registry được đăng ký một lần.
-
-- Map hợp lệ: LOADED_FROM_NVS → Home onEnter/render → DISPLAY_READY.
-- Map thiếu/hỏng: CalibrationScreen cũ, không dùng raw tọa độ mở Home.
-- CAL thành công: store/readback cũ giữ nguyên, sau đó vào Home. Không auto CAL
-  khi mở app hoặc trở Home. TEST vẫn mở TouchTestScreen M0.2 theo lệnh.
-- DIAG/NEXT/CAL/RETRY/STATUS/TEST giữ nguyên; thêm HOME/BACK. Serial vẫn được
-  xử lý ở mọi view, kể cả touch mất phản hồi hoặc mapping sai.
-- Không erase/clear/remove NVS mới, không thay namespace/key/version. Không có
-  write NVS khi open app, render, update hoặc về Home.
-
-## Scheduling, telemetry và giới hạn
-
-Loop dùng millis() cho delta, TouchHAL, diagnostics và log; cuối loop yield(),
-không gọi timed delay. Không đổi watchdog hoặc sdkconfig; cấu hình Arduino đang
-cài chạy loop trên CPU1, giữ nguyên cấu hình kiểm tra idle watchdog của SDK.
-
-`APP_SWITCH:` ghi id/label, duration_us, switches, free_heap và largest_free_block
-mỗi transition; thời gian đo từ lifecycle cũ đến xong render mới, không gồm thời
-gian debounce trước TAP. Boot vào Home cũng tính một transition. Muốn kiểm tra
-100 lần chuyển, dùng chênh lệch switches so với mốc sau boot/warm-up.
-
-`MEMORY:` mỗi 5 giây ghi uptime/mode/app/switches/free/largest. App=NONE khi ở
-CAL/TEST/DIAG và Shell bị suspend. Raw touch log vẫn theo event hoặc tối đa khoảng
-200 ms khi chạm, không theo từng frame. DiagnosticScreen có log riêng như trước.
-
-Chưa có host runtime test lifecycle hoặc test ESP32 cho Shell trong phiên này.
-Clean/link và kiểm tra tĩnh không thay thế thử 100 transition, 30 phút, font/dirty
-regions/gesture thật. Không có chức năng thực của Pet/Window/Focus/Missions/PC/
-Weather, không lưu trạng thái app, không networking/API/NTP/PC Agent hoặc LVGL.
-
-Kết quả build và hướng dẫn nạp/kiểm thử nằm trong [TEST_REPORT_M0.md](TEST_REPORT_M0.md).
+FOCUS log theo revision/STATUS; FOCUS_STORE theo lần ghi/retry; MEMORY mỗi
+5 giây free_heap/largest_free_block/uptime/app/switches; APP_SWITCH giữ telemetry
+M0. Không log timer mỗi frame. Không thêm Wi-Fi/HTTP/NTP/PC Agent/LVGL hoặc
+chức năng năm app còn lại. Xem [FOCUS_QUEST.md](FOCUS_QUEST.md).

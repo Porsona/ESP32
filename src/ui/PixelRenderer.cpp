@@ -20,6 +20,18 @@ const uint16_t ICONS[6][16]={
 }
 
 void PixelRenderer::clear() { display_.graphics().fillScreen(theme::Background); }
+void PixelRenderer::fillRegion(const Rect& r,uint16_t color) {
+  display_.graphics().fillRect(r.x,r.y,r.w,r.h,color);
+}
+void PixelRenderer::drawProgressBar(const Rect& r,uint16_t permille) {
+  if (r.w<4 || r.h<4) return;
+  auto& tft=display_.graphics();
+  tft.drawRect(r.x,r.y,r.w,r.h,theme::Gold);
+  tft.fillRect(r.x+1,r.y+1,r.w-2,r.h-2,theme::Background);
+  const uint16_t bounded=permille>1000?1000:permille;
+  const int16_t filled=static_cast<uint32_t>(r.w-4)*bounded/1000;
+  if (filled) tft.fillRect(r.x+2,r.y+2,filled,r.h-4,theme::Mint);
+}
 
 void PixelRenderer::drawText(const char* text,int16_t x,int16_t y,uint8_t size,
                              uint16_t ink,uint16_t background,uint8_t datum) {
@@ -69,7 +81,7 @@ void PixelRenderer::drawStatusBar(const char* tag) {
   auto& tft=display_.graphics();
   tft.fillRect(0,0,320,32,theme::Panel);
   tft.drawFastHLine(0,31,320,theme::Mint);
-  drawText("DESKOS v0.3",8,8,2,theme::Gold,theme::Panel);
+  drawText("DESKOS M1",8,8,2,theme::Gold,theme::Panel);
   drawText(tag,312,12,1,theme::Mint,theme::Panel,TR_DATUM);
 }
 }  // namespace deskos

@@ -7,6 +7,8 @@ class PixelRenderer {
  public:
   explicit PixelRenderer(DisplayHAL& display) : display_(display) {}
   void clear();
+  void fillRegion(const Rect& rect,uint16_t color=theme::Background);
+  void drawProgressBar(const Rect& rect,uint16_t permille);
   void drawPixelIcon(AppId id,int16_t x,int16_t y,uint8_t scale,uint16_t ink);
   void drawPanel(const Rect& rect,bool pressed=false,bool enabled=true);
   void drawButton(const Rect& rect,const char* text,bool pressed=false,bool enabled=true);
