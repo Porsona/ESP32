@@ -45,6 +45,4 @@ pio device monitor -b 115200
 ## Sources
 
 - https://github.com/HenrysCat/ESP32-2432S028-CYD-Diagnostic-Tool
-- # https://github.com/boxwrench/DIST_ESP32-CYD-Tester/blob/main/docs/ESP32_CYD_REFERENCE.md
-
-> > > > > > > origin/main
+- https://github.com/boxwrench/DIST_ESP32-CYD-Tester/blob/main/docs/ESP32_CYD_REFERENCE.md

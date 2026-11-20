@@ -19,6 +19,16 @@ Quy ước: **SOFTWARE PASS** = đã kiểm bằng build + test host; **HARDWARE
 | M6 PC Monitor | M6_PCMON_01 | commit cuối | PASS 5/5 C++ + 9/9 Python | PENDING |
 | Tích hợp shell | M6_PCMON_01 | commit cuối | PASS 3/3 | PENDING |
 
+Báo cáo từng milestone: [M0](TEST_REPORT_M0.md), [M1](TEST_REPORT_M1.md),
+[M2](TEST_REPORT_M2.md), [M3](TEST_REPORT_M3.md), [M4](TEST_REPORT_M4.md),
+[M5](TEST_REPORT_M5.md), [M6](TEST_REPORT_M6.md). Hướng dẫn: [USER_GUIDE.md](USER_GUIDE.md),
+[PC_AGENT_SETUP.md](PC_AGENT_SETUP.md).
+
+Kiểm tra lại 2026-11-20 (phiên sau merge `05f451c`): `pio run -e cyd_ili9341` SUCCESS với
+cùng RAM/Flash và cùng SHA256 firmware.bin như bên dưới; `tests/run_all_tests.ps1` PASS
+71/71 nhóm; `git diff m1-stable` vẫn rỗng cho Focus, calibration, TouchHAL, board_pins,
+platformio.ini. Đã sửa marker conflict còn sót trong README.md sau merge.
+
 Ghi chú: TEST_REPORT_M1.md vẫn ghi T01–T12 PENDING vì log nghiệm thu M1 chưa được
 đưa vào repo; trạng thái PASS của M1 dựa trên xác nhận của người dùng.
 
