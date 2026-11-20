@@ -26,10 +26,12 @@
 #include "net/HttpsFetchTask.h"
 #include "services/LiveWindowContext.h"
 #include "apps/WeatherScreen.h"
+#include "net/PcLinkUDP.h"
+#include "apps/PcMonitorScreen.h"
 
 DisplayHAL display;
 TouchHAL touch;
-constexpr char FIRMWARE_VERSION[] = "M5_WEATHER_01";
+constexpr char FIRMWARE_VERSION[] = "M6_PCMON_01";
 DiagnosticScreen diagnostics(display, FIRMWARE_VERSION);
 TouchCalibrationScreen calibrationScreen(display);
 TouchTestScreen touchTest(display);
@@ -58,6 +60,10 @@ deskos::WeatherService weatherService(focusClock,blobStore,httpsFetcher,network,
 deskos::WeatherScreen weatherScreen(pixelRenderer,appManager,weatherService,network,timeService,focusClock);
 deskos::LiveWindowContext windowContext(timeService,weatherService);  // AUTO: NO CLOCK until NTP.
 deskos::PixelWindowScreen windowScreen(pixelRenderer,appManager,blobStore,windowContext);
+deskos::EspRandomSource hardwareRandom;
+deskos::PcMonitorService pcMonitor(blobStore,focusClock,timeService,hardwareRandom);
+deskos::PcLinkUDP pcLink(pcMonitor,network);  // Receive-only UDP while Wi-Fi is up.
+deskos::PcMonitorScreen pcScreen(pixelRenderer,appManager,pcMonitor,network,focusClock);
 
 enum class View { Calibration, Test, Diagnostics, Shell };
 View view=View::Calibration;
@@ -162,6 +168,7 @@ deskos::IApp& screenFor(deskos::AppId id) {
     case deskos::AppId::Pet: return petScreen;
     case deskos::AppId::Window: return windowScreen;
     case deskos::AppId::Weather: return weatherScreen;
+    case deskos::AppId::PcMonitor: return pcScreen;
     case deskos::AppId::Focus: return focusScreen;
     case deskos::AppId::Missions: return missionsScreen;
     default: return placeholderScreen;  // Apps not built yet keep the M0 placeholder.
@@ -211,6 +218,7 @@ void printHelp() {
   Serial.println("COMMANDS: HOME | BACK | CAL | RETRY | TEST | DIAG | NEXT | STATUS | MISSIONS | QTITLE <ID> <TITLE> | PET | HELP (newline)");
   Serial.println("NETWORK: WIFI | WIFI SSID <name> | WIFI PASS <password> | WIFI OPEN | WIFI ON | WIFI OFF | WIFI FORGET | TIME");
   Serial.println("WEATHER: WEATHER | WEATHER REFRESH | WEATHER LOC <lat> <lon> [label]");
+  Serial.println("PC MONITOR: PC | PC TOKEN | PC TOKEN NEW");
 }
 
 void logPetState() {
@@ -283,6 +291,28 @@ void weatherCommand(const char* upper) {
   logWeatherState(true);
 }
 
+// PC | PC TOKEN | PC TOKEN NEW. The token is shown only on this local Serial
+// console (physical access) so it can be given to the PC agent.
+void pcCommand(const char* upper) {
+  if (!std::strcmp(upper,"PC TOKEN") || !std::strcmp(upper,"PC TOKEN NEW")) {
+    const bool regenerate=!std::strcmp(upper,"PC TOKEN NEW");
+    if (!network.connected() && (regenerate || !pcMonitor.hasToken())) {
+      Serial.println("PC: CONNECT WIFI FIRST (token uses the hardware RNG with RF on)");
+    } else if (regenerate ? !pcMonitor.regenerateToken() : !pcMonitor.ensureToken()) {
+      Serial.println("PC: TOKEN_SAVE_FAILED");
+    } else {
+      char hex[deskos::PC_TOKEN_BYTES*2+1]; pcMonitor.tokenHex(hex);
+      char ip[16]; deskos::formatIPv4(network.ipv4(),ip,sizeof(ip));
+      Serial.printf("PC: TOKEN %s\nPC: AGENT python deskos_agent.py --host %s --token %s --save-config\n",hex,ip,hex);
+    }
+  }
+  Serial.printf("PC: link=%s listening=%u accepted=%lu rejected=%lu last_reject=%s dropped=%lu port=%u\n",
+                deskos::pcLinkName(pcMonitor.state(network.connected())),pcLink.listening()?1U:0U,
+                static_cast<unsigned long>(pcMonitor.accepted()),static_cast<unsigned long>(pcMonitor.rejected()),
+                deskos::pcRxName(pcMonitor.lastReject()),static_cast<unsigned long>(pcLink.dropped()),
+                static_cast<unsigned>(deskos::PC_MONITOR_PORT));
+}
+
 void command(const char* raw, uint32_t now) {
   char line[112];
   size_t n=0;
@@ -291,6 +321,7 @@ void command(const char* raw, uint32_t now) {
   if (!std::strcmp(line,"WIFI") || !std::strncmp(line,"WIFI ",5)) { wifiCommand(line,raw); return; }
   if (!std::strcmp(line,"WEATHER") || !std::strncmp(line,"WEATHER ",8)) { weatherCommand(line); return; }
   if (!std::strcmp(line,"TIME")) { logNetState(); return; }
+  if (!std::strcmp(line,"PC") || !std::strncmp(line,"PC ",3)) { pcCommand(line); return; }
   if (!std::strcmp(line,"CAL") || !std::strcmp(line,"RETRY")) startCalibration(now);
   else if (!std::strcmp(line,"DIAG")) showDiagnostics(now);
   else if (!std::strcmp(line,"TEST")) showTest(now);
@@ -379,6 +410,7 @@ void setup() {
   logWeatherState(true);
   network.begin();         // Non-blocking; the Wi-Fi driver starts only if credentials exist.
   logNetState();
+  pcMonitor.begin();       // Loads the agent token (generated on first Wi-Fi connection).
   printHelp();
   registerShell();
   haveCalibration=touchcal::load(calibration);
@@ -397,6 +429,11 @@ void loop() {
   network.update(now);      // Status polling only; never waits for Wi-Fi.
   if (network.connected()) {
     if (!timeService.started()) timeService.start();
+    static bool tokenTried=false;  // One automatic attempt per boot: a failing NVS is never hammered.
+    if (!tokenTried && !pcMonitor.hasToken()) {
+      tokenTried=true;
+      Serial.println(pcMonitor.ensureToken()?"PC: TOKEN_CREATED (Serial: PC TOKEN)":"PC: TOKEN_SAVE_FAILED");
+    }
     if (!httpsFetcherStarted) {
       httpsFetcherStarted=httpsFetcher.begin();  // Background HTTPS task, created once on first IP.
       Serial.printf("HTTPS_TASK: %s stack=%lu\n",httpsFetcherStarted?"STARTED":"CREATE_FAILED",
@@ -405,6 +442,7 @@ void loop() {
   }
   missionService.update();  // Same loop: consumes a committed FocusCompleted immediately.
   weatherService.update();  // Polls the HTTPS task; scheduling/backoff/timeout only.
+  pcLink.update();          // <=4 datagrams per loop; stops listening when Wi-Fi drops.
   serviceSerial(now);
   const TouchFrame frame=touch.poll(now);
   logTouch(frame,now);

@@ -1,176 +1,137 @@
-# CYD DeskOS — Architecture M2
+# CYD DeskOS — Architecture (M0–M6)
 
-Firmware **M2_MISSIONS_01**, 2026-11-20, environment `cyd_ili9341`.
-M0 PASS; M1 Focus Quest được người dùng báo PASS hardware acceptance (10/10).
-M2 Daily Missions đã build và chạy test host; nghiệm thu ESP32 **PENDING**.
-Xem [TEST_REPORT_M2.md](TEST_REPORT_M2.md), [DAILY_MISSIONS.md](DAILY_MISSIONS.md),
-[FOCUS_QUEST.md](FOCUS_QUEST.md).
+Firmware **M6_PCMON_01**, 2026-11-20, environment `cyd_ili9341`, ESP32-2432S028R.
+M0 PASS và M1 PASS trên phần cứng (người dùng nghiệm thu). M2–M6: **SOFTWARE PASS**
+(build + test host), **HARDWARE PENDING**. Trạng thái chi tiết:
+[DEVELOPMENT_STATUS.md](DEVELOPMENT_STATUS.md); kế hoạch thử:
+[HARDWARE_TEST_PLAN.md](HARDWARE_TEST_PLAN.md); hướng dẫn: [USER_GUIDE.md](USER_GUIDE.md),
+[PC_AGENT_SETUP.md](PC_AGENT_SETUP.md).
 
-## Baseline và phần cứng
+## Mốc Git
 
-| Mốc | Commit | Tag | Branch |
-| --- | --- | --- | --- |
-| M0 | `654b069` | `m0-stable` | `main` |
-| M1 | `c59cfae` | `m1-stable` (annotated) | `feature/m1-focus-quest` |
-| M2 | checkpoint trên branch | — | `feature/m2-daily-missions` |
+| Mốc | Commit | Ghi chú |
+| --- | --- | --- |
+| M0 | `654b069` | tag `m0-stable`, branch `main` |
+| M1 | `c59cfae` | tag `m1-stable` (BIN `00C4C348…6D59`, đã nghiệm thu) |
+| M2 | `70099fc` | checkpoint, branch `feature/m2-daily-missions` |
+| M3 | `592f658` | checkpoint |
+| M4 | `200f4ab` | checkpoint |
+| M5 | `80d0ebd` | checkpoint |
+| M6 | commit cuối của branch | checkpoint + tài liệu |
 
-Build lại `m1-stable` tạo đúng BIN SHA256 `00C4C348…6D59` của TEST_REPORT_M1,
-nên tag trỏ tới firmware đã nghiệm thu. Không ghi đè tag nào.
+## Phần cứng không đổi
 
-Giữ nguyên platformio.ini, board_pins, DisplayHAL, TouchHAL, calibration,
-AppManager, HomeScreen, PlaceholderScreen và toàn bộ service/storage/screen
-Focus của M1 (đã kiểm `git diff m1-stable` rỗng cho các file này):
-ILI9341_2_DRIVER, GPIO, TFT HSPI, touch VSPI, rotation 1, invertDisplay(true),
-LOAD_GLCD=1. Một TFT, một Touch, một PixelRenderer dùng chung. Trình tự
-`display.begin()` → `touch.begin()` → `display.applyColorConfig()` không đổi.
+`git diff m1-stable` rỗng cho platformio.ini, `include/` (board_pins, DisplayHAL),
+`src/core/` (AppManager, calibration), `src/hal/` (TouchHAL, FocusClock), Diagnostic,
+toàn bộ Focus (model/service/storage/screen), Home, Calibration/Test screens, UITheme.
+Giữ ILI9341_2_DRIVER, GPIO, TFT HSPI, touch VSPI, rotation 1, invertDisplay(true),
+LOAD_GLCD=1, trình tự `display.begin()` → `touch.begin()` → `applyColorConfig()`.
+Một TFT, một Touch, một PixelRenderer. Wi-Fi không dùng GPIO của TFT/touch.
+Partition table mặc định giữ nguyên (app 1,310,720 byte; firmware dùng 79.2%).
 
-## Ownership và module
+## Sơ đồ module
 
 ```mermaid
 flowchart TD
-    MAIN[main.cpp: core loop] --> TIMER[FocusSessionService]
-    MAIN --> MISSION[DailyMissionService]
-    CLOCK[FocusClock: millis] --> TIMER
-    CLOCK --> MISSION
-    TIMER --> PROGRESS[ProgressService: Focus XP + reward ledger]
-    MISSION --> PROGRESS
-    TIMER --> FSTORE[FocusStorageNVS: deskos-focus/state]
-    MISSION --> MSTORE[MissionStorageNVS: deskos-quest/slot0+slot1]
-    ADAPTER[FocusCompletionAdapter] --> MISSION
-    TIMER -. committed lastRewardedSessionId .-> ADAPTER
-    MAIN --> TOUCH[TouchHAL: raw events]
-    TOUCH --> MAP[Existing affine calibration]
-    MAP --> MANAGER[AppManager: pixel events and lifecycle]
-    MANAGER --> HOME[HomeScreen]
-    MANAGER --> FOCUS[FocusQuestScreen]
-    MANAGER --> MISSIONS[DailyMissionsScreen]
-    MANAGER --> PLACE[Shared placeholder: Pet/Window/PC/Weather]
-    FOCUS --> TIMER
-    MISSIONS --> MISSION
-    HOME --> PIXEL[PixelRenderer]
-    FOCUS --> PIXEL
-    MISSIONS --> PIXEL
-    PLACE --> PIXEL
-    PIXEL --> DISPLAY[DisplayHAL: single TFT]
-    MAIN --> RECOVERY[Existing CAL / TEST / DIAG]
+    LOOP[main.cpp loop: không delay] --> FOCUS[FocusSessionService]
+    LOOP --> NET[NetworkService: Wi-Fi STA]
+    LOOP --> MIS[DailyMissionService]
+    LOOP --> WTH[WeatherService]
+    LOOP --> PCL[PcLinkUDP]
+    LOOP --> MGR[AppManager]
+    NET --> TIME[TimeServiceESP: SNTP UTC+7]
+    WTH -->|start/poll| HTTPS[HttpsFetchTask: FreeRTOS core 0]
+    HTTPS -->|TLS verified| OM[(api.open-meteo.com)]
+    PCL --> PCS[PcMonitorService: HMAC, replay, timeout]
+    AGENT[[Python agent trên PC]] -->|UDP 47801 LAN| PCL
+    FOCUS --> PROG[ProgressService: Focus XP + RewardLedger]
+    MIS --> PROG
+    TIME -->|IDaySource| MIS
+    MGR --> HOME[HomeScreen]
+    MGR --> S1[PixelPetScreen] --> PET[PetService] --> PROG
+    MGR --> S2[PixelWindowScreen] --> ANI[WindowAnimator]
+    S2 --> CTX[LiveWindowContext: TIME + WTH]
+    MGR --> S3[FocusQuestScreen]
+    MGR --> S4[DailyMissionsScreen]
+    MGR --> S5[PcMonitorScreen]
+    MGR --> S6[WeatherScreen]
+    STORE[(NVS)] --- FOCUS & MIS & PET & S2 & WTH & NET & PCS
 ```
 
-| Module | Trách nhiệm |
-| --- | --- |
-| `src/services/ProgressService.h/.cpp` | M1: Focus XP/session IDs. M2: `RewardLedger`, `grantRewardOnce`, `openRewardDay`, `totalXP()` dùng chung |
-| `src/services/MissionModel.h/.cpp` | Quest/record schema v1 168 byte, template, title, CRC/validation, chọn slot A/B |
-| `src/services/MissionStorage.h` | Interface storage, nguồn FocusCompleted, nguồn ngày lịch (M5) |
-| `src/services/DailyMissionService.h/.cpp` | Complete quest, NEW DAY, auto Focus quest, commit/pending/retry |
-| `src/services/FocusCompletionAdapter.h` | Adapter chỉ đọc state Focus đã commit; không sửa FocusSessionService |
-| `src/services/Crc32.h` | CRC-32 inline giống thuật toán M1 |
-| `src/storage/MissionStorageNVS.h/.cpp` | NVS hai slot, ghi xen kẽ, đọc lại so sánh |
-| `src/apps/DailyMissionsScreen.h/.cpp` | View/input Daily Quests; không sở hữu dữ liệu |
-| `src/ui/PixelRenderer.h/.cpp` | Thêm `drawGlyph8`, `drawCheckbox`, cỡ chữ nút; banner DESKOS M2 |
-| `src/main.cpp` | Sở hữu service, begin theo thứ tự, update mỗi loop, registry, Serial |
-| Focus M1 (Model/Session/StorageNVS/Clock/Screen) | Nguyên trạng |
+Registry: Home=0, Pet=1, Window=2, Focus=3, Missions=4, PC Monitor=5, Weather=6.
+Mỗi app là một instance riêng; PlaceholderScreen chỉ còn là fallback không đăng ký.
 
-Registry giữ Home=0, Pet=1, Window=2, Focus=3, Missions=4, PC Monitor=5,
-Weather=6. Missions thay placeholder; bốn ID còn lại dùng chung PlaceholderScreen.
-Bốn screen instance trong shell (`SHELL_REGISTRY: READY ids=7 screen_instances=4`).
+## Vòng lặp và tác vụ
 
-## XP dùng chung
+Thứ tự mỗi loop (core 1): `focusService.update()` → `network.update()` (+ khởi
+động SNTP/HTTPS task/token lần đầu có IP) → `missionService.update()` →
+`weatherService.update()` → `pcLink.update()` → Serial → touch → view/AppManager.
+Mọi service nền chạy ở mọi màn hình (kể cả CAL/TEST/DIAG); đổi app không reset
+service. Chỉ app đang hiển thị được `update/render`.
 
-XP Focus nằm trong record Focus 40 byte của M1 (không đổi layout). Nếu
-Missions cộng thẳng vào `ProgressData.totalXP`, commit Focus kế tiếp sẽ
-`adopt()` record Focus và xóa mất XP mission. Vì vậy ProgressService có hai
-phần committed:
+Tác vụ blocking duy nhất (DNS/TLS/HTTP) chạy trong `HttpsFetchTask`: một task
+FreeRTOS cố định, stack 12 KB, core 0, priority 1, tạo một lần khi có IP; giao tiếp
+bằng state + critical section, buffer URL 256 B và body 2 KB cố định. Timeout:
+connect 6 s, handshake 12 s, read 8 s; WeatherService còn watchdog 30 s và gắn
+request id để bỏ kết quả muộn.
 
-- `ProgressData` (Focus): chỉ FocusSessionService commit, +25/phiên như M1.
-- `RewardLedger` (non-Focus): `bonusXP`, `grantedCount`, `openDayId`,
-  `rewardedMask`; chỉ DailyMissionService commit.
+## XP và phần thưởng (M1/M2)
 
-`totalXP() = focusXP + bonusXP` (bão hòa UINT32_MAX). Focus Quest và Daily
-Missions đều hiển thị `totalXP()`. Daily Missions không có biến XP riêng: phần
-thưởng chỉ qua `ProgressService::grantRewardOnce()` trên candidate, rồi ghi,
-rồi `adoptLedger()` sau khi NVS xác minh (cùng mẫu `rewardFocus` của M1).
+`ProgressService` có hai phần đã commit: `ProgressData` (Focus, trong record Focus
+40 byte của M1, không đổi) và `RewardLedger` (Missions, cùng blob với trạng thái
+quest). `totalXP()` = Focus + Missions (bão hòa). Pet chỉ đọc XP. Reward key
+`mission:<dayId>:<questId>` idempotent; completion + reward trong một commit;
+FocusCompleted qua adapter đọc `lastRewardedSessionId`. Chi tiết:
+[DAILY_MISSIONS.md](DAILY_MISSIONS.md), [FOCUS_QUEST.md](FOCUS_QUEST.md).
 
-Reward key `mission:<dayId>:<questId>`. Ngày `< openDayId` đã đóng vĩnh viễn
-(`DayClosed`), ngày `> openDayId` không hợp lệ, trên `openDayId` bit
-`questId-1` đánh dấu đã thưởng (`AlreadyRewarded`). Có guard tràn số, XP
-1..100/lần, questId 1..32.
+Từ M5, khi SNTP đã đồng bộ trong lần boot hiện tại, Daily Missions tự mở ngày mới
+lúc 00:00 giờ Việt Nam (UTC+7); NEW DAY thủ công vẫn dùng được.
 
-## Daily Missions
+## NVS (schema có version + CRC32)
 
-Chi tiết dùng ở [DAILY_MISSIONS.md](DAILY_MISSIONS.md).
+| Namespace/key | Nội dung | Mốc | Khi ghi |
+| --- | --- | --- | --- |
+| `cyd-touch/affine` | Calibration | M0 | Chỉ khi CAL thành công |
+| `deskos-focus/state` | Timer + Focus XP, 40 B | M1 | Start/Pause/Resume/Reset/Complete, checkpoint ≥60 s |
+| `deskos-quest/slot0,slot1` | Quests + ledger, 168 B, A/B | M2 | Hoàn thành quest, NEW DAY, đổi title, ngày lịch |
+| `deskos-pet/state` | Style, số lần vuốt, XP đã thấy, 24 B | M3 | Rời app (nếu đổi), đổi style |
+| `deskos-win/state` | Scene + speed, 16 B | M4 | Rời app (nếu đổi) |
+| `deskos-wthr/loc` | Vị trí, 36 B | M5 | Lệnh `WEATHER LOC` |
+| `deskos-wthr/cache` | Thời tiết gần nhất, 32 B | M5 | Mỗi lần fetch thành công (≥15 phút) |
+| `deskos-net/ssid,pass,en` | Wi-Fi (string) | M5 | Lệnh `WIFI …` |
+| `deskos-pc/token` | Token 128-bit, 28 B | M6 | Lần đầu có Wi-Fi / `PC TOKEN NEW` |
 
-- 5 quest template (questId 1..5, 10 XP); quest 5 COMPLETE FOCUS loại
-  `FocusSession` chỉ hoàn thành tự động.
-- Completion là cuối cùng trong ngày: không bỏ tick, không thưởng lại.
-- `dayId` bắt đầu 1, chỉ tăng bằng NEW DAY có xác nhận. `startNewDay(expected)`
-  từ chối nếu `expected != dayId` nên một xác nhận tăng tối đa một ngày.
-- NEW DAY: xóa cờ completed, `openRewardDay(day+1)`, giữ bonusXP/grantedCount,
-  title, Focus, calibration; neo Focus anchor mới.
-- FocusCompleted: `FocusCompletionAdapter` đọc `lastRewardedSessionId`
-  (chỉ tăng sau commit +25 XP). Nếu lớn hơn `focusAnchorId` của ngày → hoàn
-  thành quest Focus (+10) một lần. Anchor lưu trong record nên reboot giữa
-  commit Focus và commit mission được phục hồi ở update đầu tiên.
-- M5: `IDaySource::calendarDay()` (TimeService/NTP) — lần đầu chỉ ghi dấu,
-  ngày lớn hơn → mở ngày mới, lùi giờ bị bỏ qua. M2 không cung cấp nguồn.
+Không có lệnh erase. Mỗi record được validate (magic/version/size/CRC/range); hỏng
+→ mặc định của riêng record đó, không ảnh hưởng record khác. Blob ghi qua
+`BlobStoreNVS`/adapter riêng, đọc lại so byte. Wi-Fi SDK chạy `persistent(false)`
+nên không tự lưu bản sao credentials.
 
-## Storage và lỗi
+## Mạng và bảo mật
 
-| Namespace/key | Nội dung | Ghi bởi |
-| --- | --- | --- |
-| `cyd-touch/affine` | Calibration M0 | TouchCalibrationStore (không đổi) |
-| `deskos-focus/state` | Timer + Focus XP/IDs, 40 byte | FocusStorageNVS (không đổi) |
-| `deskos-quest/slot0`, `slot1` | MissionRecord v1, 168 byte | MissionStorageNVS (mới) |
+- Wi-Fi chỉ khởi tạo khi đã có SSID trong NVS và đang bật; không có secrets trong
+  source/Git (`.gitignore` thêm mẫu secrets). Mật khẩu không bao giờ được in ra.
+- Reconnect: auto-reconnect của SDK + `WiFi.begin` lại theo backoff 10 s → 2 phút.
+- HTTPS Open-Meteo: `WiFiClientSecure` với `ROOT_CA_BUNDLE` (ISRG Root X1/X2, GTS
+  Root R1, DigiCert Global Root G2, trích nguyên văn từ Mozilla bundle). Kiểm tra
+  chain + hostname luôn bật; không dùng `setInsecure`.
+- NTP: pool.ntp.org / time.google.com / time.cloudflare.com, TZ `<+07>-7`.
+  `valid()` chỉ đúng sau callback sync trong lần boot này.
+- PC Monitor: UDP 47801 nhận-only, chỉ khi Wi-Fi lên; chỉ chấp nhận nguồn cùng
+  subnet; giới hạn 20 gói/s; HMAC-SHA256 (constant-time compare) trước khi đọc
+  field; counter tăng dần chống replay; lệch giờ ≤300 s khi đồng hồ hợp lệ; chỉ
+  parse số vào struct cố định — không có lệnh, không có thực thi. Agent chỉ gửi.
 
-MissionRecord: magic/version/bytes, dayId, calendarDay, focusAnchorId,
-questCount, 5 QuestSlot (id, rewardXP, kind, flags, title 20 byte đệm 0),
-RewardLedger, generation, CRC32. Completion và reward thay đổi trong cùng một
-candidate → một `putBytes` → không có trạng thái "đã tick nhưng chưa thưởng".
-Validation từ chối reward không có completion.
+## UI và hiệu năng
 
-A/B: mỗi commit ghi slot không chứa record tốt gần nhất, đọc lại so byte; chỉ
-đổi slot khi xác minh. Load chọn slot hợp lệ có generation lớn nhất; slot còn
-lại hỏng → `RECOVERED_PREVIOUS_SLOT` (lùi tối đa một commit). Lỗi I/O ở bất kỳ
-slot → `IO_ERROR`, khóa mọi thao tác ghi để không đè dữ liệu chưa đọc.
+Palette #171329/#43355D/#72E6BA/#F3D37A/#F28FAB, GLCD font 1. Status y=0..31,
+content y=32..199, BACK/HOME y=200..239 (Rect M0). Mọi app: clear toàn màn chỉ khi
+vào app, sau đó vẽ lại theo vùng bẩn. Sprite ký tự 16×16 (`drawCharSprite`) vẽ cả
+ô nền nên không nhấp nháy, không framebuffer. Window clip theo 4 ô kính và khôi
+phục dải màu trời. Animation dựa trên thời gian, giới hạn bước mỗi update.
 
-Ghi khi: lần boot đầu không có record (một lần, chốt Focus anchor), hoàn thành
-quest, NEW DAY, đổi title, lần đầu có ngày lịch (M5). Không ghi khi render, mở
-app, đổi trang, boot bình thường.
+Test host chứng minh: không có cấp phát heap trong update/render/touch ổn định
+(bộ đếm `operator new`), mọi lệnh vẽ trong 320×240, khung cửa sổ không bị vẽ đè.
 
-Ghi lỗi/không chắc chắn: candidate được cache nguyên byte, UI SAVE PENDING,
-retry mỗi 5 giây, mọi thao tác mission bị khóa đến khi commit; XP chỉ hiện sau
-commit. Record hỏng tất cả slot: INVALID_RESTORE, mặc định ngày 1/0 bonus XP,
-không tự ghi đè đến thao tác người dùng (chính sách M1). Sai version = hỏng
-(chưa có migration v2).
-
-## UI, input và hiệu năng
-
-Palette giữ Background #171329, Panel #43355D, Mint #72E6BA, Gold #F3D37A,
-Rose #F28FAB. Daily Quests: status y=0..31, progress y=32..57, quest list
-y=58..199, navigation y=200..239; Rect và static_assert trong
-`DailyMissionsScreen.cpp`. BACK/HOME giữ Rect M0.
-
-Hitbox: hàng quest 242×44, PREV/NEXT/NEW DAY 54×44, CONFIRM/CANCEL 136×40,
-BACK/HOME 156×40; không chồng lấn. CONFIRM không trùng vị trí NEW DAY (chạm
-lặp ở NEW DAY rơi vào CANCEL); CONFIRM cần ≥300 ms sau khi mở; tự hủy sau 5 s;
-NEW DAY khóa 3 s sau khi đổi ngày; 500 ms sau khi đóng hộp thoại chặn chạm
-xuống hàng quest/nút bên dưới. Ý nghĩa thao tác chốt lúc PRESS (ngày, trạng
-thái hộp thoại); đổi giữa PRESS và TAP thì hủy.
-
-Render theo vùng (stats, bar, từng hàng, cột nút, hộp thoại, nav). Clear toàn
-màn chỉ khi vào trang. Hiệu ứng pixel: 6 frame × 100 ms quanh checkbox, chỉ vẽ
-lại hàng đó. Không framebuffer/sprite, không cấp phát động trong code M2, không
-delay. NVS I/O đồng bộ chỉ tại sự kiện người dùng/retry.
-
-Log: `MISSION_RESTORE` lúc boot, `MISSIONS` theo revision, `MISSION_REWARD` khi
-grant, `MISSION_STORE` mỗi lần ghi, `QUEST` khi STATUS/MISSIONS; FOCUS, MEMORY
-(free_heap/largest_free_block 5 s), APP_SWITCH giữ như M1. Không thêm Wi-Fi/
-HTTP/NTP/PC Agent; Pet/Window/Weather/PC Monitor vẫn là placeholder.
-
-## Focus Quest (M1, không đổi)
-
-State machine IDLE/RUNNING/PAUSED/COMPLETED, 25/5 phút, +25 XP mỗi Focus,
-checkpoint ≥60 s, completion pending/retry, RUNNING khôi phục thành PAUSED. Mô
-tả đầy đủ trong [FOCUS_QUEST.md](FOCUS_QUEST.md) và bản ARCHITECTURE M1 tại tag
-`m1-stable`. Thay đổi duy nhất người dùng thấy: số XP trên Focus Quest là XP
-dùng chung (Focus + Missions). Loop gọi `focusService.update()` rồi
-`missionService.update()` trước routing view, nên cả hai chạy ở mọi màn hình,
-kể cả CAL/TEST/DIAG.
+Bộ nhớ tĩnh: RAM 52,868 / 327,680 B; Flash 1,038,233 / 1,310,720 B. Heap runtime
+(Wi-Fi ~40–60 KB, TLS handshake ~40 KB tạm thời) cần đo trên board qua log
+`MEMORY` / `HTTPS: … heap=`.

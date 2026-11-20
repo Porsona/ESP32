@@ -142,7 +142,7 @@ void PixelRenderer::drawStatusBar(const char* tag) {
   auto& tft=display_.graphics();
   tft.fillRect(0,0,320,32,theme::Panel);
   tft.drawFastHLine(0,31,320,theme::Mint);
-  drawText("DESKOS M2",8,8,2,theme::Gold,theme::Panel);
+  drawText("DESKOS M6",8,8,2,theme::Gold,theme::Panel);
   drawText(tag,312,12,1,theme::Mint,theme::Panel,TR_DATUM);
 }
 }  // namespace deskos
