@@ -1,0 +1,61 @@
+﻿PASS: M01 load 5 default quests, one initial write
+PASS: M02-M04 complete, progress 20..100%, +10 XP
+PASS: M05 repeated TAP/update: no duplicate XP or write
+PASS: M06 reboot: no duplicate reward
+PASS: M07 NVS write failure/pending retry and read I/O block
+PASS: M08 corrupted/version/shape records and A/B fallback
+PASS: M09-M10 NEW DAY resets completion, keeps XP, new keys
+PASS: M11 FocusCompleted: +25 Focus and +10 mission once
+PASS: M12 reboot between completion and reward commits
+PASS: M14 mission actions never touch the Focus timer
+PASS: M15 Serial title update and reward guards
+PASS: M16 calendar day interface for M5 TimeService
+RESULT: 12 mission tests, 0 failures
+PASS: MU1 one TAP completes once; duplicate/drag/hold rejected
+PASS: MU2 pages/HOME/BACK keep state, no reward or write on open
+PASS: MU3 NEW DAY confirm/cancel/arm/cooldown/timeout/stale press
+PASS: MU4 Focus timer unaffected; FocusCompleted while on Missions
+PASS: MU5 dirty regions, idle render and 320x240 bounds
+RESULT: 5 Missions UI integration tests, 0 failures (host draw spy, not hardware)
+PASS: initial/start/pause/resume
+PASS: exact 25-minute deadline and duplicate updates
+PASS: 5-minute break, manual START and second focus
+PASS: reset aborts without reward, preserves progress
+PASS: uint32 millis rollover
+PASS: checkpoint maximum once per 60 seconds
+PASS: core updates while screen is absent
+PASS: running checkpoint restores PAUSED, completed restores once
+PASS: missing/corrupt/version/shape and read errors
+PASS: start/pause/resume/reset write failures
+PASS: failed checkpoint throttled, RAM time continues
+PASS: completion write failure and cached retry
+PASS: ambiguous completion commit and reboot
+PASS: power loss before completion commit
+PASS: progress deduplication, IDs and overflow
+PASS: completion takes precedence at deadline
+RESULT: 16 tests, 0 failures (production durations 1500000/300000 ms)
+PASS: actual AppManager navigation/suspend retains core timer
+PASS: single TAP, drag and hold cancellation
+PASS: reset confirm/cancel/timeout
+PASS: PRESS/TAP across completion boundary
+PASS: dirty regions, idle render and 320x240 draw bounds
+RESULT: 5 UI integration tests, 0 failures (host draw spy, not hardware)
+PASS: P01 level thresholds, progress bar, unlock table, sprites
+PASS: P02 moods, TAP, sleep/wake, live level-up; XP never changed
+PASS: P03 locked/unlocked styles and frame selection
+PASS: P04 save on exit only, restore, corrupt record, write failure
+PASS: P05 320x240 bounds, no full redraw, zero steady-state allocations
+RESULT: 5 pet tests, 0 failures
+PASS: W01 settings record validation, corrupt/IO fallback
+PASS: W02 open/HOME/BACK, tap + SCENE/SPEED, save on exit only
+PASS: W03 AUTO uses only a valid clock/weather context
+PASS: W04 SLOW/NORMAL/FAST step timing, stall bound
+PASS: W05 DAY/NIGHT/RAIN 20k steps: clipped, bounded, no alloc
+RESULT: 5 window tests, 0 failures
+PASS: WE1 Open-Meteo parser (real sample), bad/truncated bodies, WMO map
+PASS: WE2 coordinates, URL, ICT day boundary, cache/location records
+PASS: WE3 offline/NTP grace/15-min schedule/cache restore/stale
+PASS: WE4 HTTP/TLS/parse errors, watchdog timeout, backoff cap, reconnect
+PASS: WE5 manual refresh rate limit, location change, raining()
+PASS: WE6 screen: offline REFRESH, states, bounds, no allocations
+RESULT: 6 weather tests, 0 failures
