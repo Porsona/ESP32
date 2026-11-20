@@ -147,6 +147,56 @@ void serviceChecks() {
   s.corrupt("deskos-pc","token",8); PcMonitorService broken(s,c,t,r); broken.begin(); CHECK(!broken.hasToken());
   (void)net;
 }
+// v1.0: replay protection survives an ESP32 reboot (counter floor in NVS).
+void replayFloorAcrossReboot() {
+  Fixture f;
+  // Without NTP nothing is persisted (a PC clock far in the future must not stick).
+  unsigned writes=f.store.writes;
+  CHECK(f.send(sign(body(1000)))==PcRx::Accepted && f.store.writes==writes && !f.monitor.hasCounterFloor());
+  f.time.ok=true;
+  CHECK(f.send(sign(body(1001)))==PcRx::Accepted && f.store.writes==writes+1 && f.monitor.hasCounterFloor());
+  for (uint64_t n=1002;n<1100;++n) { f.clock.time+=2000; CHECK(f.send(sign(body(n)))==PcRx::Accepted); }
+  CHECK(f.store.writes==writes+1);                       // Throttled: <15 min since the first checkpoint.
+  f.clock.time+=PcMonitorService::FLOOR_SAVE_MS;
+  CHECK(f.send(sign(body(1100)))==PcRx::Accepted && f.store.writes==writes+2);
+  CHECK(f.send(sign(body(1101)))==PcRx::Accepted && f.store.writes==writes+2);
+  // Reboot: packets up to the last checkpoint (1100) are replays; newer ones are new.
+  PcMonitorService rebooted(f.store,f.clock,f.time,f.random); rebooted.begin();
+  CHECK(rebooted.hasToken() && rebooted.hasCounterFloor());
+  const std::string old1=sign(body(1001)),old2=sign(body(1100)),fresh=sign(body(1102));
+  CHECK(rebooted.receive(old1.data(),old1.size(),PEER,LOCAL,MASK)==PcRx::Replay);
+  CHECK(rebooted.receive(old2.data(),old2.size(),PEER,LOCAL,MASK)==PcRx::Replay);
+  CHECK(rebooted.receive(fresh.data(),fresh.size(),PEER,LOCAL,MASK)==PcRx::Accepted);
+  // Agent restart: the real agent counter is unix ms, far above any floor.
+  const std::string agent=sign(body(1763600000123ULL));
+  CHECK(rebooted.receive(agent.data(),agent.size(),PEER,LOCAL,MASK)==PcRx::Accepted);
+  // A corrupt floor is ignored (falls back to the RAM-only behaviour), never trusted.
+  f.store.corrupt("deskos-pc","ctr",12);
+  PcMonitorService corrupt(f.store,f.clock,f.time,f.random); corrupt.begin();
+  CHECK(corrupt.hasToken() && !corrupt.hasCounterFloor());
+  // A floor never outlives its token: PC TOKEN NEW drops it without an extra write.
+  Fixture g; g.time.ok=true;
+  CHECK(g.send(sign(body(5000)))==PcRx::Accepted && g.monitor.hasCounterFloor());
+  writes=g.store.writes;
+  CHECK(g.monitor.regenerateToken() && g.store.writes==writes+1 && !g.monitor.hasCounterFloor());
+  char hexToken[33]; g.monitor.tokenHex(hexToken); uint8_t fresh2[16]; CHECK(tokenFromHex(hexToken,fresh2));
+  CHECK(g.send(sign(body(1),fresh2))==PcRx::Accepted);  // Counter space restarts for the new token.
+  PcMonitorService g2(g.store,g.clock,g.time,g.random); g2.begin();
+  const std::string again=sign(body(1),fresh2);
+  CHECK(g2.receive(again.data(),again.size(),PEER,LOCAL,MASK)==PcRx::Replay);  // New floor bound to new token.
+  // Record helpers: wrong token / zero counter / tampered fields are rejected.
+  uint64_t c=0;
+  PcCounterRecord r=makePcCounterRecord(TOKEN,0x123456789AULL);
+  CHECK(readPcCounterRecord(r,TOKEN,c) && c==0x123456789AULL);
+  CHECK(!readPcCounterRecord(r,fresh2,c));
+  PcCounterRecord zero=makePcCounterRecord(TOKEN,0); CHECK(!readPcCounterRecord(zero,TOKEN,c));
+  r.counterLow^=1; CHECK(!readPcCounterRecord(r,TOKEN,c));
+  // NVS write failure: no floor, retried only after the 15-minute throttle.
+  Fixture h; h.time.ok=true; h.store.failWrites=true;
+  const unsigned saves=h.store.saves;
+  CHECK(h.send(sign(body(10)))==PcRx::Accepted && h.store.saves==saves+1 && !h.monitor.hasCounterFloor());
+  h.clock.time+=2000; CHECK(h.send(sign(body(11)))==PcRx::Accepted && h.store.saves==saves+1);
+}
 struct Dummy : IApp {
   void onEnter() override { dirty_=true; }
   void onExit() override {}
@@ -198,7 +248,8 @@ int main(int argc,char** argv) {
     {"PC2 DPM1 parse, tamper/wrong key, unknown/duplicate/range/size",packetParsing},
     {"PC3 cross-check: packet from the real Python agent verifies",crossCheckPythonAgent},
     {"PC4 replay, LAN source, clock skew, timeout, flood, token lifecycle",serviceChecks},
-    {"PC5 dashboard states/timeout, bounds, HOME/BACK, no allocations",screenStates}
+    {"PC5 dashboard states/timeout, bounds, HOME/BACK, no allocations",screenStates},
+    {"PC6 replay floor: NVS checkpoint across reboot, throttle, token-bound, corrupt/fail-safe",replayFloorAcrossReboot}
   };
   for (const auto& t:tests) { const int before=failures; t.run(); std::printf("%s: %s\n",failures==before?"PASS":"FAIL",t.name); }
   std::printf("RESULT: %u pc monitor tests, %d failures\n",static_cast<unsigned>(sizeof(tests)/sizeof(tests[0])),failures);

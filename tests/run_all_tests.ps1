@@ -55,4 +55,6 @@ try {
     $env:PATH = $previousPath
     & $Python -I tools/pc_agent/test_deskos_agent.py
     if ($LASTEXITCODE -ne 0) { throw "Python agent tests failed: $LASTEXITCODE" }
+    & $Python -I tools/hw_validation/test_deskos_serial_log.py
+    if ($LASTEXITCODE -ne 0) { throw "Serial log tool tests failed: $LASTEXITCODE" }
 } finally { $env:PATH = $previousPath; Pop-Location }

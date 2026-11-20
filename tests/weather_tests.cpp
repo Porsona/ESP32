@@ -209,6 +209,36 @@ void screenNavigationBoundsAllocations() {
   tap(240,220); CHECK(manager.activeId()==AppId::Home);
   manager.open(AppId::Weather); manager.update(0); tap(80,220); CHECK(manager.activeId()==AppId::Home);
 }
+// v1.0 TLS hardening: pure helpers used by HttpsFetchTask (leaf date check, host).
+void certificateDatesAndHost() {
+  int64_t e=0;
+  CHECK(civilToEpoch({1970,1,1,0,0,0},e) && e==0);
+  CHECK(civilToEpoch({2015,6,4,11,4,38},e) && e==1433415878LL);   // ISRG Root X1 notBefore (python timegm).
+  CHECK(civilToEpoch({2035,6,4,11,4,38},e) && e==2064567878LL);   // ISRG Root X1 notAfter.
+  CHECK(civilToEpoch({2024,2,29,0,0,0},e) && e==1709164800LL);    // Leap day.
+  CHECK(civilToEpoch({2026,11,20,23,59,60},e) && e==1795219199LL); // Leap second clamps to :59.
+  const CivilTime bad[]={{2025,2,29,0,0,0},{2026,13,1,0,0,0},{2026,4,31,0,0,0},{2026,1,1,24,0,0},
+                         {1949,1,1,0,0,0},{2026,0,10,0,0,0},{2026,1,0,0,0,0},{2026,1,1,0,60,0}};
+  for (const auto& b:bad) CHECK(!civilToEpoch(b,e));
+  const CivilTime from={2026,10,1,0,0,0},to={2026,12,30,23,59,59};  // 90-day style leaf.
+  int64_t f=0,t=0; CHECK(civilToEpoch(from,f) && civilToEpoch(to,t));
+  CHECK(certDateStatus(from,to,static_cast<uint32_t>(f))==CertDate::Valid);
+  CHECK(certDateStatus(from,to,static_cast<uint32_t>(t))==CertDate::Valid);
+  CHECK(certDateStatus(from,to,static_cast<uint32_t>(f-1))==CertDate::NotYetValid);
+  CHECK(certDateStatus(from,to,static_cast<uint32_t>(t+1))==CertDate::Expired);
+  CHECK(certDateStatus(to,from,static_cast<uint32_t>(f))==CertDate::BadDate);      // Inverted window.
+  CHECK(certDateStatus({2026,2,30,0,0,0},to,static_cast<uint32_t>(f))==CertDate::BadDate);
+  CHECK(!std::strcmp(certDateName(CertDate::Expired),"EXPIRED"));
+  char host[64];
+  WeatherLocation l=defaultLocation(); char url[256]; CHECK(buildWeatherUrl(l,url,sizeof(url)));
+  CHECK(httpsUrlHost(url,host,sizeof(host)) && !std::strcmp(host,"api.open-meteo.com"));
+  CHECK(httpsUrlHost("https://a.b",host,sizeof(host)) && !std::strcmp(host,"a.b"));
+  CHECK(httpsUrlHost("https://x.y?q=1",host,sizeof(host)) && !std::strcmp(host,"x.y"));
+  const char* rejected[]={"http://api.open-meteo.com/v1","https://","https:///x","https://evil.com:8443/",
+                          "https://user@evil.com/","ftp://x","",nullptr};
+  for (const char* r:rejected) CHECK(!httpsUrlHost(r,host,sizeof(host)));
+  char tiny[4]; CHECK(!httpsUrlHost("https://abcd/",tiny,sizeof(tiny)) && httpsUrlHost("https://abc/",tiny,sizeof(tiny)));
+}
 }  // namespace
 int main() {
   struct Test { const char* name; void (*run)(); };
@@ -218,7 +248,8 @@ int main() {
     {"WE3 offline/NTP grace/15-min schedule/cache restore/stale",schedulingSuccessAndCache},
     {"WE4 HTTP/TLS/parse errors, watchdog timeout, backoff cap, reconnect",failuresTimeoutsAndBackoff},
     {"WE5 manual refresh rate limit, location change, raining()",manualRefreshAndLocation},
-    {"WE6 screen: offline REFRESH, states, bounds, no allocations",screenNavigationBoundsAllocations}
+    {"WE6 screen: offline REFRESH, states, bounds, no allocations",screenNavigationBoundsAllocations},
+    {"WE7 TLS hardening: certificate date window (UTC civil), HTTPS host parse",certificateDatesAndHost}
   };
   for (const auto& t:tests) { const int before=failures; t.run(); std::printf("%s: %s\n",failures==before?"PASS":"FAIL",t.name); }
   std::printf("RESULT: %u weather tests, %d failures\n",static_cast<unsigned>(sizeof(tests)/sizeof(tests[0])),failures);

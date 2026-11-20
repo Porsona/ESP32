@@ -1,4 +1,4 @@
-# PC Agent Setup (M6 PC Monitor)
+# PC Agent Setup (PC Monitor, DESKOS_1.0.0-RC1)
 
 Agent `tools/pc_agent/deskos_agent.py` gửi CPU/RAM/DISK/mạng/pin từ laptop Windows
 tới màn PC MONITOR của ESP32 qua UDP trong mạng LAN, xác thực bằng HMAC-SHA256
@@ -10,6 +10,9 @@ tới màn PC MONITOR của ESP32 qua UDP trong mạng LAN, xác thực bằng H
   nào về PC. Không cần mở cổng firewall trên PC.
 - Chỉ gửi tới địa chỉ LAN (private); địa chỉ Internet bị từ chối.
 - ESP32 chỉ nhận gói từ cùng subnet, kiểm HMAC trước khi đọc dữ liệu, chống replay.
+  Từ RC1, counter lớn nhất đã nhận được lưu NVS (≤ 1 lần/15 phút, chỉ khi ESP32 có
+  giờ NTP) nên gói cũ bắt được trên LAN không còn được chấp nhận lại sau khi ESP32
+  reboot (trừ các gói của ≤ 15 phút cuối trước reboot, trước khi NTP đồng bộ).
 - Dữ liệu **không mã hóa**: người cùng mạng LAN có thể đọc số liệu CPU/RAM.
 - Token không nằm trong repo. Nó lấy từ `--token`, biến môi trường `DESKOS_TOKEN`
   hoặc `%APPDATA%\DeskOS\agent.json` (khi dùng `--save-config`).
@@ -67,3 +70,8 @@ tới màn PC MONITOR của ESP32 qua UDP trong mạng LAN, xác thực bằng H
 - Không thấy gói nào (`accepted=0 rejected=0`): kiểm cùng Wi-Fi, router có bật
   "AP/client isolation" hay không, và IP ESP32 có đổi sau khi reboot router.
 - IP ESP32 đổi → chạy lại agent với `--host <IP mới> --save-config`.
+- `REPLAY` liên tục sau khi khởi động lại agent: đồng hồ Windows đã bị lùi (counter
+  của agent là thời gian Unix tính bằng ms). Đồng bộ lại giờ Windows
+  (Settings → Time → Sync now) hoặc `PC TOKEN NEW` rồi chạy agent với token mới.
+- Không dán log Serial thô lên mạng: dòng `PC: TOKEN …` chứa token. Dùng
+  `tools/hw_validation/deskos_serial_log.py` (tự che token), xem [USER_GUIDE.md](USER_GUIDE.md).

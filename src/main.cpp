@@ -31,7 +31,7 @@
 
 DisplayHAL display;
 TouchHAL touch;
-constexpr char FIRMWARE_VERSION[] = "M6_PCMON_01";
+constexpr char FIRMWARE_VERSION[] = "DESKOS_1.0.0-RC1";
 DiagnosticScreen diagnostics(display, FIRMWARE_VERSION);
 TouchCalibrationScreen calibrationScreen(display);
 TouchTestScreen touchTest(display);
@@ -55,7 +55,7 @@ deskos::DailyMissionsScreen missionsScreen(pixelRenderer,appManager,missionServi
 deskos::BlobStoreNVS blobStore;  // Shared by Pet, Window and Weather records.
 deskos::PetService petService(blobStore,progressService,focusClock);
 deskos::PixelPetScreen petScreen(pixelRenderer,appManager,petService);
-deskos::HttpsFetchTask httpsFetcher;
+deskos::HttpsFetchTask httpsFetcher(timeService);  // Leaf certificate dates checked once NTP is valid.
 deskos::WeatherService weatherService(focusClock,blobStore,httpsFetcher,network,timeService);
 deskos::WeatherScreen weatherScreen(pixelRenderer,appManager,weatherService,network,timeService,focusClock);
 deskos::LiveWindowContext windowContext(timeService,weatherService);  // AUTO: NO CLOCK until NTP.
@@ -306,11 +306,11 @@ void pcCommand(const char* upper) {
       Serial.printf("PC: TOKEN %s\nPC: AGENT python deskos_agent.py --host %s --token %s --save-config\n",hex,ip,hex);
     }
   }
-  Serial.printf("PC: link=%s listening=%u accepted=%lu rejected=%lu last_reject=%s dropped=%lu port=%u\n",
-                deskos::pcLinkName(pcMonitor.state(network.connected())),pcLink.listening()?1U:0U,
+  Serial.printf("PC: link=%s token=%u listening=%u accepted=%lu rejected=%lu last_reject=%s dropped=%lu port=%u replay_floor=%u\n",
+                deskos::pcLinkName(pcMonitor.state(network.connected())),pcMonitor.hasToken()?1U:0U,pcLink.listening()?1U:0U,
                 static_cast<unsigned long>(pcMonitor.accepted()),static_cast<unsigned long>(pcMonitor.rejected()),
                 deskos::pcRxName(pcMonitor.lastReject()),static_cast<unsigned long>(pcLink.dropped()),
-                static_cast<unsigned>(deskos::PC_MONITOR_PORT));
+                static_cast<unsigned>(deskos::PC_MONITOR_PORT),pcMonitor.hasCounterFloor()?1U:0U);
 }
 
 void command(const char* raw, uint32_t now) {
@@ -335,7 +335,11 @@ void command(const char* raw, uint32_t now) {
     else diagnostics.nextTest(now);
   } else if (!std::strcmp(line,"STATUS")) {
     printCalibration(); lastFocusRevision=0; logFocusState(); logMissionState(true); logPetState();
-    logNetState(); logWeatherState(true);
+    Serial.printf("WINDOW: scene=%s speed=%s\n",deskos::sceneName(windowScreen.selected()),
+                  deskos::speedName(windowScreen.speed()));
+    logNetState(); logWeatherState(true); pcCommand("PC");
+    Serial.printf("MEMORY: free_heap=%u largest_free_block=%u min_free_heap=%u\n",ESP.getFreeHeap(),
+                  ESP.getMaxAllocHeap(),ESP.getMinFreeHeap());
   } else if (!std::strcmp(line,"MISSIONS")) logMissionState(true);
   else if (!std::strcmp(line,"PET")) logPetState();
   else if (!std::strncmp(line,"QTITLE ",7)) titleCommand(line+7);
@@ -475,9 +479,12 @@ void loop() {
     lastHeapLog=now;
     const char* activeApp=appManager.activeId()==deskos::AppId::None?"NONE":
                           deskos::appInfo(appManager.activeId()).label;
-    Serial.printf("MEMORY: uptime_ms=%lu mode=%s app=%s switches=%lu free_heap=%u largest_free_block=%u\n",
+    // min_free_heap is the boot-time low-water mark (captures TLS handshake peaks);
+    // loop_stack_free is the Arduino loop task's stack high-water mark in bytes.
+    Serial.printf("MEMORY: uptime_ms=%lu mode=%s app=%s switches=%lu free_heap=%u largest_free_block=%u min_free_heap=%u loop_stack_free=%lu\n",
                   static_cast<unsigned long>(now),viewName(),activeApp,
-                  static_cast<unsigned long>(appManager.switchCount()),ESP.getFreeHeap(),ESP.getMaxAllocHeap());
+                  static_cast<unsigned long>(appManager.switchCount()),ESP.getFreeHeap(),ESP.getMaxAllocHeap(),
+                  ESP.getMinFreeHeap(),static_cast<unsigned long>(uxTaskGetStackHighWaterMark(nullptr)*sizeof(StackType_t)));
   }
   yield();  // No timed delay; TouchHAL and diagnostics retain their millis() deadlines.
 }

@@ -15,3 +15,6 @@ include/secrets*.h
 .env
 tools/pc_agent/config.json
 tools/pc_agent/__pycache__/
+# Hardware-validation Serial logs (may contain IP/SSID even after redaction).
+/hw_logs/
+__pycache__/
