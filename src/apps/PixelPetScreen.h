@@ -21,6 +21,8 @@ class PixelPetScreen : public IApp {
   void invalidate(uint8_t regions) { regions_|=regions; dirty_=true; }
   void invalidateTarget(int target);
   void activate(int target);
+  PetFrame currentFrame() const;
+  void interact(int16_t x,int16_t y);
   uint8_t frameKey() const;
   uint8_t extrasKey() const;
   void drawHeader();
@@ -34,6 +36,8 @@ class PixelPetScreen : public IApp {
   uint8_t regions_=All,lastFrame_=255,lastExtras_=255;
   bool fullRedraw_=true;
   int pressed_=NoTarget,tapTarget_=NoTarget;
+  int16_t pressX_=0,pressY_=0,tapX_=0,tapY_=0;
   uint32_t lastRevision_=0,lastXP_=0;
+  PetCanvas canvas_;  // 2.3 KB static composition buffer: no heap, no stack spike in render.
 };
 }  // namespace deskos

@@ -1,0 +1,84 @@
+ets Jul 29 2019 12:21:46
+rst:0x1 (POWERON_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:2
+load:0x3fff0030,len:1184
+load:0x40078000,len:13232
+load:0x40080400,len:3028
+entry 0x400805e4
+FIRMWARE_VERSION: DESKOS_1.0.0-RC1
+TOUCH_INIT: CONFIGURED (begin is not a hardware response test)
+Heap: 256388 bytes
+DISPLAY_CONFIG: INVERT_ON
+FOCUS_RESTORE: result=1 running_restored_as_paused=0 focus_ms=1500000 break_ms=300000
+FOCUS: ms=317 mode=FOCUS state=IDLE remaining_ms=1500000 xp=25 sessions=1 id=2 rewarded_id=2 save_pending=0 error=NONE
+MISSION_RESTORE: result=LOADED day=2 bonus_xp=0 total_xp=25
+MISSIONS: ms=331 day=2 done=0/5 focus_anchor=2 rewards=0 bonus_xp=0 total_xp=25 generation=3 save_pending=0 error=NONE
+QUEST: id=1 title="STUDY SQL" kind=MANUAL xp=10 done=0 rewarded=0
+QUEST: id=2 title="PRACTICE PYTHON" kind=MANUAL xp=10 done=0 rewarded=0
+QUEST: id=3 title="READ 10 PAGES" kind=MANUAL xp=10 done=0 rewarded=0
+QUEST: id=4 title="REVIEW NOTES" kind=MANUAL xp=10 done=0 rewarded=0
+QUEST: id=5 title="COMPLETE FOCUS" kind=FOCUS xp=10 done=0 rewarded=0
+PET: load=1 level=1 xp=25 next=100 style=CLASSIC pets=0 last_seen_xp=25
+WINDOW_RESTORE: load=1 scene=NIGHT speed=NORMAL
+WEATHER: loc="HO CHI MINH" 10.8231,106.6297 has=1 src=1 temp_deci=261 code=3 hum=92 age_s=-1 fetching=0 error=NONE http=0 failures=0 next_ms=0
+NET: CONNECTING ssid="<REDACTED>" pass_len=8
+NET: state=CONNECTING ssid="<REDACTED>" pass_len=8 enabled=1 ip=0.0.0.0 rssi=0 reconnects=0
+TIME: synced=0 (no NTP yet; quest days stay manual)
+COMMANDS: HOME | BACK | CAL | RETRY | TEST | DIAG | NEXT | STATUS | MISSIONS | QTITLE <ID> <TITLE> | PET | HELP (newline)
+NETWORK: WIFI | WIFI SSID <REDACTED>
+WEATHER: WEATHER | WEATHER REFRESH | WEATHER LOC <lat> <lon> [label]
+PC MONITOR: PC | PC TOKEN | PC TOKEN NEW
+SHELL_REGISTRY: READY ids=7 dedicated_apps=6 placeholders=0
+TOUCH_CAL: LOADED_FROM_NVS
+TOUCH_CAL: AFFINE x=0.0861848*rawX+0.0025080*rawY-24.917 y=0.0028643*rawX+0.0668754*rawY-15.703
+TOUCH_CAL: ERRORS rms=2.75 max=2.92 independent_max=14.11
+APP_SWITCH: id=0 app=HOME duration_us=91827 switches=1 free_heap=209692 largest_free_block=110580
+DISPLAY_READY
+NET: CONNECTED ip=192.168.30.151 rssi=-34
+TIME: SNTP_STARTED tz=Asia/Ho_Chi_Minh(UTC+7)
+HTTPS_TASK: STARTED stack=12288
+PC_LINK: LISTENING udp_port=47801
+WEATHER: loc="HO CHI MINH" 10.8231,106.6297 has=1 src=1 temp_deci=261 code=3 hum=92 age_s=-1 fetching=0 error=NONE http=0 failures=0 next_ms=0
+TOUCH_CAL: AFFINE x=0.0861848*rawX+0.0025080*rawY-24.917 y=0.0028643*rawX+0.0668754*rawY-15.703
+TOUCH_CAL: ERRORS rms=2.75 max=2.92 independent_max=14.11
+FOCUS: ms=2669 mode=FOCUS state=IDLE remaining_ms=1500000 xp=25 sessions=1 id=2 rewarded_id=2 save_pending=0 error=NONE
+MISSIONS: ms=2679 day=2 done=0/5 focus_anchor=2 rewards=0 bonus_xp=0 total_xp=25 generation=3 save_pending=0 error=NONE
+QUEST: id=1 title="STUDY SQL" kind=MANUAL xp=10 done=0 rewarded=0
+QUEST: id=2 title="PRACTICE PYTHON" kind=MANUAL xp=10 done=0 rewarded=0
+QUEST: id=3 title="READ 10 PAGES" kind=MANUAL xp=10 done=0 rewarded=0
+QUEST: id=4 title="REVIEW NOTES" kind=MANUAL xp=10 done=0 rewarded=0
+QUEST: id=5 title="COMPLETE FOCUS" kind=FOCUS xp=10 done=0 rewarded=0
+PET: load=1 level=1 xp=25 next=100 style=CLASSIC pets=0 last_seen_xp=25
+WINDOW: scene=NIGHT speed=NORMAL
+NET: state=CONNECTED ssid="<REDACTED>" pass_len=8 enabled=1 ip=192.168.30.151 rssi=-34 reconnects=0
+TIME: synced=0 (no NTP yet; quest days stay manual)
+WEATHER: loc="HO CHI MINH" 10.8231,106.6297 has=1 src=1 temp_deci=261 code=3 hum=92 age_s=-1 fetching=0 error=NONE http=0 failures=0 next_ms=0
+PC: link=WAITING token=1 listening=1 accepted=0 rejected=0 last_reject=ACCEPTED dropped=0 port=47801 replay_floor=1
+MEMORY: free_heap=191460 largest_free_block=110580 min_free_heap=187504
+MEMORY: uptime_ms=5000 mode=SHELL app=HOME switches=1 free_heap=191460 largest_free_block=110580 min_free_heap=187504 loop_stack_free=5432
+WEATHER: loc="HO CHI MINH" 10.8231,106.6297 has=1 src=1 temp_deci=261 code=3 hum=92 age_s=33 fetching=1 error=NONE http=0 failures=0 next_ms=0
+BLOB_STORE: SAVED ns=deskos-pc key=ctr bytes=24
+MEMORY: uptime_ms=10000 mode=SHELL app=HOME switches=1 free_heap=144796 largest_free_block=77812 min_free_heap=122676 loop_stack_free=5432
+HTTPS: code=200 bytes=506 ms=8430 cert_date=VALID stack_free=6740 heap=189832 max_block=110580 min_heap=122576
+BLOB_STORE: SAVED ns=deskos-wthr key=cache bytes=32
+WEATHER: loc="HO CHI MINH" 10.8231,106.6297 has=1 src=2 temp_deci=261 code=3 hum=92 age_s=0 fetching=0 error=NONE http=200 failures=0 next_ms=899991
+MEMORY: uptime_ms=15000 mode=SHELL app=HOME switches=1 free_heap=189832 largest_free_block=110580 min_free_heap=122576 loop_stack_free=5432
+MEMORY: uptime_ms=20000 mode=SHELL app=HOME switches=1 free_heap=189832 largest_free_block=110580 min_free_heap=122576 loop_stack_free=5432
+TOUCH_CAL: AFFINE x=0.0861848*rawX+0.0025080*rawY-24.917 y=0.0028643*rawX+0.0668754*rawY-15.703
+TOUCH_CAL: ERRORS rms=2.75 max=2.92 independent_max=14.11
+FOCUS: ms=21614 mode=FOCUS state=IDLE remaining_ms=1500000 xp=25 sessions=1 id=2 rewarded_id=2 save_pending=0 error=NONE
+MISSIONS: ms=21625 day=2 done=0/5 focus_anchor=2 rewards=0 bonus_xp=0 total_xp=25 generation=3 save_pending=0 error=NONE
+QUEST: id=1 title="STUDY SQL" kind=MANUAL xp=10 done=0 rewarded=0
+QUEST: id=2 title="PRACTICE PYTHON" kind=MANUAL xp=10 done=0 rewarded=0
+QUEST: id=3 title="READ 10 PAGES" kind=MANUAL xp=10 done=0 rewarded=0
+QUEST: id=4 title="REVIEW NOTES" kind=MANUAL xp=10 done=0 rewarded=0
+QUEST: id=5 title="COMPLETE FOCUS" kind=FOCUS xp=10 done=0 rewarded=0
+PET: load=1 level=1 xp=25 next=100 style=CLASSIC pets=0 last_seen_xp=25
+WINDOW: scene=NIGHT speed=NORMAL
+NET: state=CONNECTED ssid="<REDACTED>" pass_len=8 enabled=1 ip=192.168.30.151 rssi=-34 reconnects=0
+TIME: synced=1 local=01:38 day_key=20778 syncs=1
+WEATHER: loc="HO CHI MINH" 10.8231,106.6297 has=1 src=2 temp_deci=261 code=3 hum=92 age_s=7 fetching=0 error=NONE http=200 failures=0 next_ms=892380
+PC: link=CONNECTED token=1 listening=1 accepted=9 rejected=0 last_reject=ACCEPTED dropped=0 port=47801 replay_floor=1
+MEMORY: free_heap=189832 largest_free_block=110580 min_free_heap=122576

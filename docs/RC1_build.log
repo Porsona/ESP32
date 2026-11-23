@@ -1,0 +1,287 @@
+﻿Processing cyd_ili9341 (platform: espressif32@6.4.0; board: esp32dev; framework: arduino)
+--------------------------------------------------------------------------------
+Verbose mode can be enabled via `-v, --verbose` option
+CONFIGURATION: https://docs.platformio.org/page/boards/espressif32/esp32dev.html
+PLATFORM: Espressif 32 (6.4.0) > Espressif ESP32 Dev Module
+HARDWARE: ESP32 240MHz, 320KB RAM, 4MB Flash
+DEBUG: Current (cmsis-dap) External (cmsis-dap, esp-bridge, esp-prog, iot-bus-jtag, jlink, minimodule, olimex-arm-usb-ocd, olimex-arm-usb-ocd-h, olimex-arm-usb-tiny-h, olimex-jtag-tiny, tumpa)
+PACKAGES: 
+ - framework-arduinoespressif32 @ 3.20011.230801 (2.0.11) 
+ - tool-esptoolpy @ 1.40501.0 (4.5.1) 
+ - toolchain-xtensa-esp32 @ 8.4.0+2021r2-patch5
+LDF: Library Dependency Finder -> https://bit.ly/configure-pio-ldf
+LDF Modes: Finder ~ chain, Compatibility ~ soft
+Found 35 compatible libraries
+Scanning dependencies...
+Dependency Graph
+|-- TFT_eSPI @ 2.5.43
+|-- XPT2046_Touchscreen @ 0.0.0+sha.d57f64c
+|-- Preferences @ 2.0.0
+|-- HTTPClient @ 2.0.0
+|-- WiFiClientSecure @ 2.0.0
+|-- WiFi @ 2.0.0
+|-- SPI @ 2.0.0
+Building in release mode
+Compiling .pio\build\cyd_ili9341\src\DiagnosticScreen.cpp.o
+Compiling .pio\build\cyd_ili9341\src\DisplayHAL.cpp.o
+Compiling .pio\build\cyd_ili9341\src\apps\DailyMissionsScreen.cpp.o
+Compiling .pio\build\cyd_ili9341\src\apps\FocusQuestScreen.cpp.o
+Compiling .pio\build\cyd_ili9341\src\apps\HomeScreen.cpp.o
+Compiling .pio\build\cyd_ili9341\src\apps\PcMonitorScreen.cpp.o
+Compiling .pio\build\cyd_ili9341\src\apps\PixelPetScreen.cpp.o
+Compiling .pio\build\cyd_ili9341\src\apps\PixelWindowScreen.cpp.o
+Compiling .pio\build\cyd_ili9341\src\apps\PlaceholderScreen.cpp.o
+Compiling .pio\build\cyd_ili9341\src\apps\TouchCalibrationScreen.cpp.o
+Compiling .pio\build\cyd_ili9341\src\apps\TouchTestScreen.cpp.o
+Compiling .pio\build\cyd_ili9341\src\apps\WeatherScreen.cpp.o
+Compiling .pio\build\cyd_ili9341\src\core\AppManager.cpp.o
+Compiling .pio\build\cyd_ili9341\src\core\TouchCalibration.cpp.o
+Compiling .pio\build\cyd_ili9341\src\core\TouchCalibrationStore.cpp.o
+Compiling .pio\build\cyd_ili9341\src\hal\TouchHAL.cpp.o
+Compiling .pio\build\cyd_ili9341\src\main.cpp.o
+Compiling .pio\build\cyd_ili9341\src\net\HttpsFetchTask.cpp.o
+Compiling .pio\build\cyd_ili9341\src\net\NetworkService.cpp.o
+Compiling .pio\build\cyd_ili9341\src\net\PcLinkUDP.cpp.o
+Compiling .pio\build\cyd_ili9341\src\net\TimeServiceESP.cpp.o
+pio.exe : In file included from include/DisplayHAL.h:3,
+At line:1 char:448
++ ... oding utf8 docs/RC1_clean.log; & $pio run -e cyd_ili9341 2>&1 | Out-F ...
++                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (In file include...DisplayHAL.h:3,:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+                 from src/DisplayHAL.cpp:1:
+.pio/libdeps/cyd_ili9341/TFT_eSPI/TFT_eSPI.h:973:8: warning: #warning >>>>------>> TOUCH_CS pin not defined, TFT_eSPI 
+touch functions will not be available! [-Wcpp]
+       #warning >>>>------>> TOUCH_CS pin not defined, TFT_eSPI touch functions will not be available!
+        ^~~~~~~
+In file included from include/DisplayHAL.h:3,
+                 from include/DiagnosticScreen.h:4,
+                 from src/DiagnosticScreen.cpp:1:
+.pio/libdeps/cyd_ili9341/TFT_eSPI/TFT_eSPI.h:973:8: warning: #warning >>>>------>> TOUCH_CS pin not defined, TFT_eSPI 
+touch functions will not be available! [-Wcpp]
+       #warning >>>>------>> TOUCH_CS pin not defined, TFT_eSPI touch functions will not be available!
+        ^~~~~~~
+In file included from include/DisplayHAL.h:3,
+                 from src/apps/../ui/PixelRenderer.h:2,
+                 from src/apps/DailyMissionsScreen.h:3,
+                 from src/apps/DailyMissionsScreen.cpp:1:
+.pio/libdeps/cyd_ili9341/TFT_eSPI/TFT_eSPI.h:973:8: warning: #warning >>>>------>> TOUCH_CS pin not defined, TFT_eSPI 
+touch functions will not be available! [-Wcpp]
+       #warning >>>>------>> TOUCH_CS pin not defined, TFT_eSPI touch functions will not be available!
+        ^~~~~~~
+Compiling .pio\build\cyd_ili9341\src\services\DailyMissionService.cpp.o
+In file included from include/DisplayHAL.h:3,
+                 from src/apps/../ui/PixelRenderer.h:2,
+                 from src/apps/FocusQuestScreen.h:3,
+                 from src/apps/FocusQuestScreen.cpp:1:
+.pio/libdeps/cyd_ili9341/TFT_eSPI/TFT_eSPI.h:973:8: warning: #warning >>>>------>> TOUCH_CS pin not defined, TFT_eSPI 
+touch functions will not be available! [-Wcpp]
+       #warning >>>>------>> TOUCH_CS pin not defined, TFT_eSPI touch functions will not be available!
+        ^~~~~~~
+In file included from include/DisplayHAL.h:3,
+                 from src/apps/../ui/PixelRenderer.h:2,
+                 from src/apps/HomeScreen.h:3,
+                 from src/apps/HomeScreen.cpp:1:
+.pio/libdeps/cyd_ili9341/TFT_eSPI/TFT_eSPI.h:973:8: warning: #warning >>>>------>> TOUCH_CS pin not defined, TFT_eSPI 
+touch functions will not be available! [-Wcpp]
+       #warning >>>>------>> TOUCH_CS pin not defined, TFT_eSPI touch functions will not be available!
+        ^~~~~~~
+Compiling .pio\build\cyd_ili9341\src\services\FocusModel.cpp.o
+In file included from include/DisplayHAL.h:3,
+                 from src/apps/../ui/PixelRenderer.h:2,
+                 from src/apps/PcMonitorScreen.h:3,
+                 from src/apps/PcMonitorScreen.cpp:1:
+.pio/libdeps/cyd_ili9341/TFT_eSPI/TFT_eSPI.h:973:8: warning: #warning >>>>------>> TOUCH_CS pin not defined, TFT_eSPI 
+touch functions will not be available! [-Wcpp]
+       #warning >>>>------>> TOUCH_CS pin not defined, TFT_eSPI touch functions will not be available!
+        ^~~~~~~
+In file included from include/DisplayHAL.h:3,
+                 from src/apps/../ui/PixelRenderer.h:2,
+                 from src/apps/PixelPetScreen.h:3,
+                 from src/apps/PixelPetScreen.cpp:1:
+.pio/libdeps/cyd_ili9341/TFT_eSPI/TFT_eSPI.h:973:8: warning: #warning >>>>------>> TOUCH_CS pin not defined, TFT_eSPI 
+touch functions will not be available! [-Wcpp]
+       #warning >>>>------>> TOUCH_CS pin not defined, TFT_eSPI touch functions will not be available!
+        ^~~~~~~
+In file included from include/DisplayHAL.h:3,
+                 from src/apps/../ui/PixelRenderer.h:2,
+                 from src/apps/PlaceholderScreen.h:3,
+                 from src/apps/PlaceholderScreen.cpp:1:
+.pio/libdeps/cyd_ili9341/TFT_eSPI/TFT_eSPI.h:973:8: warning: #warning >>>>------>> TOUCH_CS pin not defined, TFT_eSPI 
+touch functions will not be available! [-Wcpp]
+       #warning >>>>------>> TOUCH_CS pin not defined, TFT_eSPI touch functions will not be available!
+        ^~~~~~~
+In file included from include/DisplayHAL.h:3,
+                 from src/apps/../ui/PixelRenderer.h:2,
+                 from src/apps/PixelWindowScreen.h:3,
+                 from src/apps/PixelWindowScreen.cpp:1:
+.pio/libdeps/cyd_ili9341/TFT_eSPI/TFT_eSPI.h:973:8: warning: #warning >>>>------>> TOUCH_CS pin not defined, TFT_eSPI 
+touch functions will not be available! [-Wcpp]
+       #warning >>>>------>> TOUCH_CS pin not defined, TFT_eSPI touch functions will not be available!
+        ^~~~~~~
+In file included from include/DisplayHAL.h:3,
+                 from src/apps/TouchCalibrationScreen.h:2,
+                 from src/apps/TouchCalibrationScreen.cpp:1:
+.pio/libdeps/cyd_ili9341/TFT_eSPI/TFT_eSPI.h:973:8: warning: #warning >>>>------>> TOUCH_CS pin not defined, TFT_eSPI 
+touch functions will not be available! [-Wcpp]
+       #warning >>>>------>> TOUCH_CS pin not defined, TFT_eSPI touch functions will not be available!
+        ^~~~~~~
+In file included from include/DisplayHAL.h:3,
+                 from src/apps/../ui/PixelRenderer.h:2,
+                 from src/apps/WeatherScreen.h:3,
+                 from src/apps/WeatherScreen.cpp:1:
+.pio/libdeps/cyd_ili9341/TFT_eSPI/TFT_eSPI.h:973:8: warning: #warning >>>>------>> TOUCH_CS pin not defined, TFT_eSPI 
+touch functions will not be available! [-Wcpp]
+       #warning >>>>------>> TOUCH_CS pin not defined, TFT_eSPI touch functions will not be available!
+        ^~~~~~~
+In file included from include/DisplayHAL.h:3,
+                 from src/apps/TouchTestScreen.h:2,
+                 from src/apps/TouchTestScreen.cpp:1:
+.pio/libdeps/cyd_ili9341/TFT_eSPI/TFT_eSPI.h:973:8: warning: #warning >>>>------>> TOUCH_CS pin not defined, TFT_eSPI 
+touch functions will not be available! [-Wcpp]
+       #warning >>>>------>> TOUCH_CS pin not defined, TFT_eSPI touch functions will not be available!
+        ^~~~~~~
+Compiling .pio\build\cyd_ili9341\src\services\FocusSessionService.cpp.o
+In file included from include/DisplayHAL.h:3,
+                 from src/main.cpp:5:
+.pio/libdeps/cyd_ili9341/TFT_eSPI/TFT_eSPI.h:973:8: warning: #warning >>>>------>> TOUCH_CS pin not defined, TFT_eSPI 
+touch functions will not be available! [-Wcpp]
+       #warning >>>>------>> TOUCH_CS pin not defined, TFT_eSPI touch functions will not be available!
+        ^~~~~~~
+Compiling .pio\build\cyd_ili9341\src\services\MissionModel.cpp.o
+Compiling .pio\build\cyd_ili9341\src\services\NetTypes.cpp.o
+Compiling .pio\build\cyd_ili9341\src\services\PcMonitorModel.cpp.o
+Compiling .pio\build\cyd_ili9341\src\services\PcMonitorService.cpp.o
+Compiling .pio\build\cyd_ili9341\src\services\PetModel.cpp.o
+Compiling .pio\build\cyd_ili9341\src\services\PetService.cpp.o
+Compiling .pio\build\cyd_ili9341\src\services\ProgressService.cpp.o
+Compiling .pio\build\cyd_ili9341\src\services\Sha256.cpp.o
+Compiling .pio\build\cyd_ili9341\src\services\WeatherModel.cpp.o
+Compiling .pio\build\cyd_ili9341\src\services\WeatherService.cpp.o
+Compiling .pio\build\cyd_ili9341\src\services\WindowSettings.cpp.o
+Compiling .pio\build\cyd_ili9341\src\storage\BlobStoreNVS.cpp.o
+Compiling .pio\build\cyd_ili9341\src\storage\FocusStorageNVS.cpp.o
+Compiling .pio\build\cyd_ili9341\src\storage\MissionStorageNVS.cpp.o
+Compiling .pio\build\cyd_ili9341\src\ui\PetSprites.cpp.o
+Compiling .pio\build\cyd_ili9341\src\ui\PixelRenderer.cpp.o
+Compiling .pio\build\cyd_ili9341\src\ui\WeatherSprites.cpp.o
+Compiling .pio\build\cyd_ili9341\src\ui\WindowAnimator.cpp.o
+Building .pio\build\cyd_ili9341\bootloader.bin
+Generating partitions .pio\build\cyd_ili9341\partitions.bin
+esptool.py v4.5.1
+Creating esp32 image...
+Merged 1 ELF section
+Successfully created esp32 image.
+Compiling .pio\build\cyd_ili9341\lib43a\SPI\SPI.cpp.o
+Compiling .pio\build\cyd_ili9341\lib263\FS\FS.cpp.o
+Compiling .pio\build\cyd_ili9341\lib263\FS\vfs_api.cpp.o
+Compiling .pio\build\cyd_ili9341\lib7ec\SPIFFS\SPIFFS.cpp.o
+Compiling .pio\build\cyd_ili9341\lib3ad\LittleFS\LittleFS.cpp.o
+Compiling .pio\build\cyd_ili9341\lib458\TFT_eSPI\TFT_eSPI.cpp.o
+Compiling .pio\build\cyd_ili9341\libf9d\XPT2046_Touchscreen\XPT2046_Touchscreen.cpp.o
+Compiling .pio\build\cyd_ili9341\lib321\Preferences\Preferences.cpp.o
+Compiling .pio\build\cyd_ili9341\lib535\WiFi\WiFi.cpp.o
+Compiling .pio\build\cyd_ili9341\lib535\WiFi\WiFiAP.cpp.o
+Compiling .pio\build\cyd_ili9341\lib535\WiFi\WiFiClient.cpp.o
+Compiling .pio\build\cyd_ili9341\lib535\WiFi\WiFiGeneric.cpp.o
+Compiling .pio\build\cyd_ili9341\lib535\WiFi\WiFiMulti.cpp.o
+Compiling .pio\build\cyd_ili9341\lib535\WiFi\WiFiSTA.cpp.o
+Compiling .pio\build\cyd_ili9341\lib535\WiFi\WiFiScan.cpp.o
+In file included from include/DisplayHAL.h:3,
+                 from src/ui/PixelRenderer.h:2,
+                 from src/ui/PixelRenderer.cpp:1:
+.pio/libdeps/cyd_ili9341/TFT_eSPI/TFT_eSPI.h:973:8: warning: #warning >>>>------>> TOUCH_CS pin not defined, TFT_eSPI 
+touch functions will not be available! [-Wcpp]
+       #warning >>>>------>> TOUCH_CS pin not defined, TFT_eSPI touch functions will not be available!
+        ^~~~~~~
+Compiling .pio\build\cyd_ili9341\lib535\WiFi\WiFiServer.cpp.o
+Compiling .pio\build\cyd_ili9341\lib535\WiFi\WiFiUdp.cpp.o
+In file included from include/DisplayHAL.h:3,
+                 from src/ui/PixelRenderer.h:2,
+                 from src/ui/WindowAnimator.h:2,
+                 from src/ui/WindowAnimator.cpp:1:
+.pio/libdeps/cyd_ili9341/TFT_eSPI/TFT_eSPI.h:973:8: warning: #warning >>>>------>> TOUCH_CS pin not defined, TFT_eSPI 
+touch functions will not be available! [-Wcpp]
+       #warning >>>>------>> TOUCH_CS pin not defined, TFT_eSPI touch functions will not be available!
+        ^~~~~~~
+Compiling .pio\build\cyd_ili9341\libdb7\WiFiClientSecure\WiFiClientSecure.cpp.o
+Compiling .pio\build\cyd_ili9341\libdb7\WiFiClientSecure\esp_crt_bundle.c.o
+Compiling .pio\build\cyd_ili9341\libdb7\WiFiClientSecure\ssl_client.cpp.o
+Archiving .pio\build\cyd_ili9341\lib43a\libSPI.a
+Compiling .pio\build\cyd_ili9341\lib3ee\HTTPClient\HTTPClient.cpp.o
+Compiling .pio\build\cyd_ili9341\FrameworkArduino\Esp.cpp.o
+Archiving .pio\build\cyd_ili9341\lib263\libFS.a
+Compiling .pio\build\cyd_ili9341\FrameworkArduino\FirmwareMSC.cpp.o
+Archiving .pio\build\cyd_ili9341\lib7ec\libSPIFFS.a
+Compiling .pio\build\cyd_ili9341\FrameworkArduino\FunctionalInterrupt.cpp.o
+Compiling .pio\build\cyd_ili9341\FrameworkArduino\HWCDC.cpp.o
+Compiling .pio\build\cyd_ili9341\FrameworkArduino\HardwareSerial.cpp.o
+In file included from .pio/libdeps/cyd_ili9341/TFT_eSPI/TFT_eSPI.cpp:16:
+.pio/libdeps/cyd_ili9341/TFT_eSPI/TFT_eSPI.h:973:8: warning: #warning >>>>------>> TOUCH_CS pin not defined, TFT_eSPI 
+touch functions will not be available! [-Wcpp]
+       #warning >>>>------>> TOUCH_CS pin not defined, TFT_eSPI touch functions will not be available!
+        ^~~~~~~
+Archiving .pio\build\cyd_ili9341\lib3ad\libLittleFS.a
+Compiling .pio\build\cyd_ili9341\FrameworkArduino\IPAddress.cpp.o
+Archiving .pio\build\cyd_ili9341\libf9d\libXPT2046_Touchscreen.a
+Compiling .pio\build\cyd_ili9341\FrameworkArduino\IPv6Address.cpp.o
+Archiving .pio\build\cyd_ili9341\lib321\libPreferences.a
+Compiling .pio\build\cyd_ili9341\FrameworkArduino\MD5Builder.cpp.o
+Compiling .pio\build\cyd_ili9341\FrameworkArduino\Print.cpp.o
+Compiling .pio\build\cyd_ili9341\FrameworkArduino\Stream.cpp.o
+Compiling .pio\build\cyd_ili9341\FrameworkArduino\StreamString.cpp.o
+Compiling .pio\build\cyd_ili9341\FrameworkArduino\Tone.cpp.o
+Compiling .pio\build\cyd_ili9341\FrameworkArduino\USB.cpp.o
+Compiling .pio\build\cyd_ili9341\FrameworkArduino\USBCDC.cpp.o
+Compiling .pio\build\cyd_ili9341\FrameworkArduino\USBMSC.cpp.o
+Compiling .pio\build\cyd_ili9341\FrameworkArduino\WMath.cpp.o
+Compiling .pio\build\cyd_ili9341\FrameworkArduino\WString.cpp.o
+Compiling .pio\build\cyd_ili9341\FrameworkArduino\base64.cpp.o
+Compiling .pio\build\cyd_ili9341\FrameworkArduino\cbuf.cpp.o
+Archiving .pio\build\cyd_ili9341\lib458\libTFT_eSPI.a
+Compiling .pio\build\cyd_ili9341\FrameworkArduino\esp32-hal-adc.c.o
+Compiling .pio\build\cyd_ili9341\FrameworkArduino\esp32-hal-bt.c.o
+Compiling .pio\build\cyd_ili9341\FrameworkArduino\esp32-hal-cpu.c.o
+Archiving .pio\build\cyd_ili9341\lib535\libWiFi.a
+Compiling .pio\build\cyd_ili9341\FrameworkArduino\esp32-hal-dac.c.o
+Archiving .pio\build\cyd_ili9341\libdb7\libWiFiClientSecure.a
+Compiling .pio\build\cyd_ili9341\FrameworkArduino\esp32-hal-gpio.c.o
+Compiling .pio\build\cyd_ili9341\FrameworkArduino\esp32-hal-i2c-slave.c.o
+Compiling .pio\build\cyd_ili9341\FrameworkArduino\esp32-hal-i2c.c.o
+Compiling .pio\build\cyd_ili9341\FrameworkArduino\esp32-hal-ledc.c.o
+Compiling .pio\build\cyd_ili9341\FrameworkArduino\esp32-hal-matrix.c.o
+Compiling .pio\build\cyd_ili9341\FrameworkArduino\esp32-hal-misc.c.o
+Compiling .pio\build\cyd_ili9341\FrameworkArduino\esp32-hal-psram.c.o
+Compiling .pio\build\cyd_ili9341\FrameworkArduino\esp32-hal-rgb-led.c.o
+Compiling .pio\build\cyd_ili9341\FrameworkArduino\esp32-hal-rmt.c.o
+Compiling .pio\build\cyd_ili9341\FrameworkArduino\esp32-hal-sigmadelta.c.o
+Compiling .pio\build\cyd_ili9341\FrameworkArduino\esp32-hal-spi.c.o
+Compiling .pio\build\cyd_ili9341\FrameworkArduino\esp32-hal-time.c.o
+Compiling .pio\build\cyd_ili9341\FrameworkArduino\esp32-hal-timer.c.o
+Archiving .pio\build\cyd_ili9341\lib3ee\libHTTPClient.a
+Compiling .pio\build\cyd_ili9341\FrameworkArduino\esp32-hal-tinyusb.c.o
+Compiling .pio\build\cyd_ili9341\FrameworkArduino\esp32-hal-touch.c.o
+Compiling .pio\build\cyd_ili9341\FrameworkArduino\esp32-hal-uart.c.o
+Compiling .pio\build\cyd_ili9341\FrameworkArduino\firmware_msc_fat.c.o
+Compiling .pio\build\cyd_ili9341\FrameworkArduino\libb64\cdecode.c.o
+Compiling .pio\build\cyd_ili9341\FrameworkArduino\libb64\cencode.c.o
+Compiling .pio\build\cyd_ili9341\FrameworkArduino\main.cpp.o
+Compiling .pio\build\cyd_ili9341\FrameworkArduino\stdlib_noniso.c.o
+Compiling .pio\build\cyd_ili9341\FrameworkArduino\wiring_pulse.c.o
+Compiling .pio\build\cyd_ili9341\FrameworkArduino\wiring_shift.c.o
+Archiving .pio\build\cyd_ili9341\libFrameworkArduino.a
+Linking .pio\build\cyd_ili9341\firmware.elf
+Retrieving maximum program size .pio\build\cyd_ili9341\firmware.elf
+Checking size .pio\build\cyd_ili9341\firmware.elf
+Advanced Memory Usage is available via "PlatformIO Home > Project Inspect"
+RAM:   [==        ]  16.1% (used 52892 bytes from 327680 bytes)
+Flash: [========  ]  79.2% (used 1038365 bytes from 1310720 bytes)
+Building .pio\build\cyd_ili9341\firmware.bin with action:
+  "$PYTHONEXE" "$OBJCOPY" --chip esp32 elf2image --flash_mode ${__get_board_flash_mode(__env__)} --flash_freq ${__get_board_f_flash(__env__)} --flash_size 4MB --elf-sha256-offset 0xb0 -o $TARGET $SOURCES
+Building .pio\build\cyd_ili9341\firmware.bin
+esptool.py v4.5.1
+Creating esp32 image...
+Merged 25 ELF sections
+Successfully created esp32 image.
+========================= [SUCCESS] Took 23.65 seconds =========================

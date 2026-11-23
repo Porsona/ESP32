@@ -4,8 +4,8 @@ namespace deskos {
 namespace {
 // Six hand-drawn 16x16 monochrome glyphs, flash constants, not framebuffers.
 const uint16_t ICONS[6][16]={
-  {0x300C,0x781E,0x7FFE,0x7FFE,0x6006,0x6246,0x6246,0x6006,
-   0x6186,0x63C6,0x3FFC,0x1FF8,0x0FF0,0x0C30,0x1830,0x0000},
+  {0x0400,0x0400,0x1FF8,0x3FFC,0x7FFE,0x6006,0x6666,0x6666,  // VOLT robot head
+   0x6006,0x63C6,0x7FFE,0x3FFC,0x0FF0,0x1FF8,0x1FF8,0x0000},
   {0xFFFF,0x8001,0xB801,0xB801,0x8001,0x8001,0x8181,0x83C1,
    0x87E1,0x8FF1,0x9FF9,0xBFFD,0xFFFF,0x8001,0x8001,0xFFFF},
   {0x0180,0x03C0,0x03C0,0x03C0,0x03C0,0x03C0,0x03C0,0x03C0,
@@ -112,37 +112,58 @@ uint16_t spriteColor(char c,const SpritePalette& p) {
     default: return p.background;
   }
 }
-}  // namespace
-
-void PixelRenderer::drawCharSprite(const char* const* rows,uint8_t width,uint8_t height,int16_t x,int16_t y,
-                                   uint8_t scale,const SpritePalette& palette) {
+struct PaletteLookup {
+  const SpritePalette& palette;
+  uint16_t operator()(char c) const { return spriteColor(c,palette); }
+};
+struct InkLookup {
+  const SpriteInk* inks; uint8_t count; uint16_t background;
+  uint16_t operator()(char c) const {
+    for (uint8_t i=0;i<count;++i) if (inks[i].key==c) return inks[i].color;
+    return background;
+  }
+};
+// Every cell is painted; one fillRect per same-colour run of a row.
+template <typename Lookup>
+void drawRuns(TFT_eSPI& tft,const char* const* rows,uint8_t width,uint8_t height,int16_t x,int16_t y,
+              uint8_t scale,const Lookup& colorOf) {
   if (!rows || !scale) return;
-  auto& tft=display_.graphics();
   for (uint8_t row=0;row<height;++row) {
     const char* line=rows[row];
     uint8_t col=0;
     bool ended=!line;
-    while (col<width) {  // One fillRect per same-colour run.
+    while (col<width) {
       const char c=ended?'.':line[col];
       if (!c) { ended=true; continue; }
-      const uint16_t color=spriteColor(c,palette);
+      const uint16_t color=colorOf(c);
       const uint8_t first=col;
       while (col<width) {
         const char next=ended?'.':line[col];
         if (!next) { ended=true; continue; }
-        if (spriteColor(next,palette)!=color) break;
+        if (colorOf(next)!=color) break;
         ++col;
       }
       tft.fillRect(x+first*scale,y+row*scale,(col-first)*scale,scale,color);
     }
   }
 }
+}  // namespace
+
+void PixelRenderer::drawCharSprite(const char* const* rows,uint8_t width,uint8_t height,int16_t x,int16_t y,
+                                   uint8_t scale,const SpritePalette& palette) {
+  drawRuns(display_.graphics(),rows,width,height,x,y,scale,PaletteLookup{palette});
+}
+
+void PixelRenderer::drawCharSprite(const char* const* rows,uint8_t width,uint8_t height,int16_t x,int16_t y,
+                                   uint8_t scale,const SpriteInk* inks,uint8_t inkCount,uint16_t background) {
+  drawRuns(display_.graphics(),rows,width,height,x,y,scale,InkLookup{inks,inks?inkCount:static_cast<uint8_t>(0),background});
+}
 
 void PixelRenderer::drawStatusBar(const char* tag) {
   auto& tft=display_.graphics();
   tft.fillRect(0,0,320,32,theme::Panel);
   tft.drawFastHLine(0,31,320,theme::Mint);
-  drawText("DESKOS M6",8,8,2,theme::Gold,theme::Panel);
+  drawText("DESKOS 1.0",8,8,2,theme::Gold,theme::Panel);
   drawText(tag,312,12,1,theme::Mint,theme::Panel,TR_DATUM);
 }
 }  // namespace deskos

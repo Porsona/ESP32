@@ -6,6 +6,10 @@ constexpr uint8_t TL_DATUM=0,TC_DATUM=1,TR_DATUM=2,MC_DATUM=4;
 class TFT_eSPI {
  public:
   unsigned draws=0,clears=0,outside=0;
+  unsigned textMatches[2]={0,0};
+  void watchText(const char* first,const char* second) {
+    watchedText_[0]=first; watchedText_[1]=second; textMatches[0]=textMatches[1]=0;
+  }
   void fillScreen(uint16_t) { ++draws; ++clears; }
   void fillRect(int x,int y,int w,int h,uint16_t) { bounds(x,y,w,h); }
   void drawRect(int x,int y,int w,int h,uint16_t) { bounds(x,y,w,h); }
@@ -17,6 +21,7 @@ class TFT_eSPI {
   void setTextDatum(uint8_t datum) { datum_=datum; }
   void setTextColor(uint16_t,uint16_t) {}
   void drawString(const char* text,int x,int y) {
+    for (uint8_t i=0;i<2;++i) if (watchedText_[i] && std::strstr(text,watchedText_[i])) ++textMatches[i];
     const int w=std::strlen(text)*6*size_,h=8*size_;
     if (datum_==TC_DATUM || datum_==MC_DATUM) x-=w/2;
     else if (datum_==TR_DATUM) x-=w;
@@ -39,4 +44,5 @@ class TFT_eSPI {
   int forbidden_[8][4]={{0}};
   int forbidCount_=0;
   uint8_t size_=1,datum_=TL_DATUM;
+  const char* watchedText_[2]={nullptr,nullptr};
 };

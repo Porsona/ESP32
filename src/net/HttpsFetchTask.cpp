@@ -10,7 +10,10 @@ namespace {
 constexpr int CONNECT_TIMEOUT_MS=6000;
 constexpr uint16_t READ_TIMEOUT_MS=8000;
 constexpr unsigned long HANDSHAKE_TIMEOUT_S=12;
-constexpr int ERROR_TOO_LARGE=-100;
+// Priority 0 = IDLE priority: the task time-slices with IDLE0 instead of
+// starving it during TLS crypto (this framework enables TASK_WDT_PANIC with
+// a 5 s timeout and watches IDLE0). Wi-Fi/lwIP tasks keep their priority.
+constexpr UBaseType_t TASK_PRIORITY=tskIDLE_PRIORITY;
 
 // Fixed-size sink for HTTPClient::writeToStream (handles chunked bodies; no String).
 class BufferSink : public Stream {
@@ -32,12 +35,14 @@ class BufferSink : public Stream {
   size_t capacity_,length_=0;
   bool overflow_=false;
 };
+
+CivilTime civil(const mbedtls_x509_time& t) { return CivilTime{t.year,t.mon,t.day,t.hour,t.min,t.sec}; }
 }  // namespace
 
 bool HttpsFetchTask::begin() {
   if (task_) return true;
   // Core 0 next to the Wi-Fi stack; the Arduino loop (UI) stays on core 1.
-  return xTaskCreatePinnedToCore(entry,"deskos-https",STACK_BYTES,this,1,&task_,0)==pdPASS;
+  return xTaskCreatePinnedToCore(entry,"deskos-https",STACK_BYTES,this,TASK_PRIORITY,&task_,0)==pdPASS;
 }
 
 bool HttpsFetchTask::start(uint32_t requestId,const char* url) {
@@ -75,29 +80,55 @@ void HttpsFetchTask::run() {
     ulTaskNotifyTake(pdTRUE,portMAX_DELAY);
     int code=-1;
     size_t length=0;
+    const char* certNote="NOT_CONNECTED";
     {
-      HTTPClient http;
-      http.setConnectTimeout(CONNECT_TIMEOUT_MS);
-      http.setTimeout(READ_TIMEOUT_MS);
-      http.setReuse(false);
-      http.useHTTP10(true);  // No keep-alive; body ends at connection close.
       const uint32_t started=millis();
-      if (http.begin(client,url_)) {
-        code=http.GET();
-        if (code==HTTP_CODE_OK) {
-          BufferSink sink(body_,BODY_MAX);
-          const int written=http.writeToStream(&sink);
-          length=sink.length();
-          if (sink.overflow()) code=ERROR_TOO_LARGE;
-          else if (written<0) code=written;
+      char host[HOST_MAX];
+      if (!httpsUrlHost(url_,host,sizeof(host))) code=ERROR_BAD_URL;
+      // 1) DNS + TCP + TLS handshake (CA chain + hostname) on our own client.
+      else if (!client.connect(host,443,CONNECT_TIMEOUT_MS)) {
+        char reason[64]={0};
+        const int tlsError=client.lastError(reason,sizeof(reason));
+        Serial.printf("HTTPS: CONNECT_FAILED host=%s tls_error=%d %s\n",host,tlsError,reason);
+        code=ERROR_CONNECT;
+      } else {
+        // 2) Validity dates of the leaf certificate, only with trustworthy time.
+        const mbedtls_x509_crt* leaf=client.getPeerCertificate();
+        bool dateOk=true;
+        if (!leaf) { certNote="NO_PEER_CERT"; dateOk=false; code=ERROR_NO_PEER_CERT; }
+        else if (!time_.valid()) certNote="DATE_UNCHECKED_NO_NTP";
+        else {
+          const CertDate d=certDateStatus(civil(leaf->valid_from),civil(leaf->valid_to),time_.epoch());
+          certNote=certDateName(d);
+          if (d!=CertDate::Valid) { dateOk=false; code=ERROR_CERT_DATE; }
         }
-        http.end();
+        // 3) HTTP/1.0 GET over the already-verified connection (HTTPClient reuses it).
+        if (dateOk) {
+          client.setTimeout((READ_TIMEOUT_MS+500)/1000);
+          HTTPClient http;
+          http.setConnectTimeout(CONNECT_TIMEOUT_MS);
+          http.setTimeout(READ_TIMEOUT_MS);
+          http.setReuse(false);
+          http.useHTTP10(true);  // No keep-alive; body ends at connection close.
+          if (http.begin(client,url_)) {
+            code=http.GET();
+            if (code==HTTP_CODE_OK) {
+              BufferSink sink(body_,BODY_MAX);
+              const int written=http.writeToStream(&sink);
+              length=sink.length();
+              if (sink.overflow()) code=ERROR_TOO_LARGE;
+              else if (written<0) code=written;
+            }
+            http.end();
+          }
+        }
       }
       client.stop();
       body_[length]=0;
-      Serial.printf("HTTPS: code=%d bytes=%u ms=%lu stack_free=%lu heap=%u\n",code,static_cast<unsigned>(length),
-                    static_cast<unsigned long>(millis()-started),static_cast<unsigned long>(stackHighWaterBytes()),
-                    ESP.getFreeHeap());
+      Serial.printf("HTTPS: code=%d bytes=%u ms=%lu cert_date=%s stack_free=%lu heap=%u max_block=%u min_heap=%u\n",
+                    code,static_cast<unsigned>(length),static_cast<unsigned long>(millis()-started),certNote,
+                    static_cast<unsigned long>(stackHighWaterBytes()),ESP.getFreeHeap(),ESP.getMaxAllocHeap(),
+                    ESP.getMinFreeHeap());
     }
     portENTER_CRITICAL(&lock_);
     code_=code; length_=length; state_=FetchState::Done;

@@ -5,7 +5,8 @@
 
 namespace deskos {
 namespace {
-constexpr uint32_t TOKEN_MAGIC=0x50434B31UL;  // "PCK1"
+constexpr uint32_t TOKEN_MAGIC=0x50434B31UL;    // "PCK1"
+constexpr uint32_t COUNTER_MAGIC=0x50434E31UL;  // "PCN1"
 int hexValue(char c) {
   if (c>='0' && c<='9') return c-'0';
   if (c>='a' && c<='f') return c-'a'+10;
@@ -123,5 +124,24 @@ bool validPcTokenRecord(const PcTokenRecord& r) {
   for (uint8_t b:r.token) any|=b;
   return r.magic==TOKEN_MAGIC && r.version==PC_TOKEN_SCHEMA_VERSION && r.bytes==sizeof(r) && any &&
          r.checksum==crc32Bytes(&r,offsetof(PcTokenRecord,checksum));
+}
+
+PcCounterRecord makePcCounterRecord(const uint8_t (&token)[PC_TOKEN_BYTES],uint64_t counter) {
+  PcCounterRecord r;
+  memset(&r,0,sizeof(r));
+  r.magic=COUNTER_MAGIC; r.version=PC_COUNTER_SCHEMA_VERSION; r.bytes=sizeof(r);
+  r.tokenTag=crc32Bytes(token,PC_TOKEN_BYTES);
+  r.counterLow=static_cast<uint32_t>(counter); r.counterHigh=static_cast<uint32_t>(counter>>32);
+  r.checksum=crc32Bytes(&r,offsetof(PcCounterRecord,checksum));
+  return r;
+}
+bool readPcCounterRecord(const PcCounterRecord& r,const uint8_t (&token)[PC_TOKEN_BYTES],uint64_t& counter) {
+  if (r.magic!=COUNTER_MAGIC || r.version!=PC_COUNTER_SCHEMA_VERSION || r.bytes!=sizeof(r) ||
+      r.checksum!=crc32Bytes(&r,offsetof(PcCounterRecord,checksum)) || r.tokenTag!=crc32Bytes(token,PC_TOKEN_BYTES))
+    return false;
+  const uint64_t value=static_cast<uint64_t>(r.counterHigh)<<32|r.counterLow;
+  if (!value) return false;
+  counter=value;
+  return true;
 }
 }  // namespace deskos

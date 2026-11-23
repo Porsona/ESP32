@@ -17,6 +17,9 @@ class INetworkStatus {
 };
 // "a.b.c.d" for an lwIP-order address.
 void formatIPv4(uint32_t address,char* out,size_t size);
+// Host part of "https://<host>[:port|/|?...]" (port 443 only). False for any
+// other scheme, an explicit port, an empty host or one that does not fit.
+bool httpsUrlHost(const char* url,char* out,size_t size);
 
 // Asynchronous HTTP(S) GET. start() returns false while a request is running.
 enum class FetchState : uint8_t { Idle, Busy, Done };

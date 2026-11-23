@@ -1,0 +1,99 @@
+﻿PASS: M01 load 5 default quests, one initial write
+PASS: M02-M04 complete, progress 20..100%, +10 XP
+PASS: M05 repeated TAP/update: no duplicate XP or write
+PASS: M06 reboot: no duplicate reward
+PASS: M07 NVS write failure/pending retry and read I/O block
+PASS: M08 corrupted/version/shape records and A/B fallback
+PASS: M09-M10 NEW DAY resets completion, keeps XP, new keys
+PASS: M11 FocusCompleted: +25 Focus and +10 mission once
+PASS: M12 reboot between completion and reward commits
+PASS: M14 mission actions never touch the Focus timer
+PASS: M15 Serial title update and reward guards
+PASS: M16 calendar day interface for M5 TimeService
+RESULT: 12 mission tests, 0 failures
+PASS: MU1 one TAP completes once; duplicate/drag/hold rejected
+PASS: MU2 pages/HOME/BACK keep state, no reward or write on open
+PASS: MU3 NEW DAY confirm/cancel/arm/cooldown/timeout/stale press
+PASS: MU4 Focus timer unaffected; FocusCompleted while on Missions
+PASS: MU5 dirty regions, idle render and 320x240 bounds
+RESULT: 5 Missions UI integration tests, 0 failures (host draw spy, not hardware)
+PASS: initial/start/pause/resume
+PASS: exact 25-minute deadline and duplicate updates
+PASS: 5-minute break, manual START and second focus
+PASS: reset aborts without reward, preserves progress
+PASS: uint32 millis rollover
+PASS: checkpoint maximum once per 60 seconds
+PASS: core updates while screen is absent
+PASS: running checkpoint restores PAUSED, completed restores once
+PASS: missing/corrupt/version/shape and read errors
+PASS: start/pause/resume/reset write failures
+PASS: failed checkpoint throttled, RAM time continues
+PASS: completion write failure and cached retry
+PASS: ambiguous completion commit and reboot
+PASS: power loss before completion commit
+PASS: progress deduplication, IDs and overflow
+PASS: completion takes precedence at deadline
+RESULT: 16 tests, 0 failures (production durations 1500000/300000 ms)
+PASS: actual AppManager navigation/suspend retains core timer
+PASS: single TAP, drag and hold cancellation
+PASS: reset confirm/cancel/timeout
+PASS: PRESS/TAP across completion boundary
+PASS: dirty regions, idle render and 320x240 draw bounds
+RESULT: 5 UI integration tests, 0 failures (host draw spy, not hardware)
+PASS: P01 level thresholds, progress bar, unlock table, sprites
+PASS: P02 moods, TAP, sleep/wake, live level-up; XP never changed
+PASS: P03 locked/unlocked styles and frame selection
+PASS: P04 save on exit only, restore, corrupt record, write failure
+PASS: P05 320x240 bounds, no full redraw, zero steady-state allocations
+RESULT: 5 pet tests, 0 failures
+PASS: W01 settings record validation, corrupt/IO fallback
+PASS: W02 open/HOME/BACK, tap + SCENE/SPEED, save on exit only
+PASS: W03 AUTO uses only a valid clock/weather context
+PASS: W04 SLOW/NORMAL/FAST step timing, stall bound
+PASS: W05 DAY/NIGHT/RAIN 20k steps: clipped, bounded, no alloc
+RESULT: 5 window tests, 0 failures
+PASS: WE1 Open-Meteo parser (real sample), bad/truncated bodies, WMO map
+PASS: WE2 coordinates, URL, ICT day boundary, cache/location records
+PASS: WE3 offline/NTP grace/15-min schedule/cache restore/stale
+PASS: WE4 HTTP/TLS/parse errors, watchdog timeout, backoff cap, reconnect
+PASS: WE5 manual refresh rate limit, location change, raining()
+PASS: WE6 screen: offline REFRESH, states, bounds, no allocations
+PASS: WE7 TLS hardening: certificate date window (UTC civil), HTTPS host parse
+RESULT: 7 weather tests, 0 failures
+PASS: PC1 SHA-256 FIPS vectors and HMAC RFC 4231 #1/#2/#6
+PASS: PC2 DPM1 parse, tamper/wrong key, unknown/duplicate/range/size
+PASS: PC3 cross-check: packet from the real Python agent verifies
+PASS: PC4 replay, LAN source, clock skew, timeout, flood, token lifecycle
+PASS: PC5 dashboard states/timeout, bounds, HOME/BACK, no allocations
+PASS: PC6 replay floor: NVS checkpoint across reboot, throttle, token-bound, corrupt/fail-safe
+RESULT: 6 pc monitor tests, 0 failures
+PASS: S01 all six apps open from Home tiles; HOME and BACK return
+PASS: S02 Focus timer survives app tour; XP shared Focus/Missions/Pet once
+PASS: S03 120 app switches with animation: zero heap allocations
+RESULT: 3 shell integration tests, 0 failures
+test_collector_runs (__main__.PacketTests.test_collector_runs) ... ok
+test_counter_strictly_increases (__main__.PacketTests.test_counter_strictly_increases) ... ok
+test_emit_test_packet_is_deterministic (__main__.PacketTests.test_emit_test_packet_is_deterministic) ... ok
+test_format_and_hmac (__main__.PacketTests.test_format_and_hmac) ... ok
+test_host_sanitized (__main__.PacketTests.test_host_sanitized) ... ok
+test_lan_only (__main__.PacketTests.test_lan_only) ... ok
+test_send_only_no_remote_execution (__main__.PacketTests.test_send_only_no_remote_execution) ... ok
+test_token_validation (__main__.PacketTests.test_token_validation) ... ok
+test_values_are_clamped (__main__.PacketTests.test_values_are_clamped) ... ok
+System.Management.Automation.RemoteException
+----------------------------------------------------------------------
+Ran 9 tests in 0.006s
+System.Management.Automation.RemoteException
+OK
+test_capture_sends_only_read_only_commands (__main__.AnalyzeTests.test_capture_sends_only_read_only_commands) ... ok
+test_cli_analyze_and_redacted_copy (__main__.AnalyzeTests.test_cli_analyze_and_redacted_copy) ... ok
+test_flags_resets_leaks_fragmentation_and_secrets (__main__.AnalyzeTests.test_flags_resets_leaks_fragmentation_and_secrets) ... ok
+test_healthy_stress_log (__main__.AnalyzeTests.test_healthy_stress_log) ... ok
+test_password_ssid_env (__main__.RedactionTests.test_password_ssid_env) ... ok
+test_sha256_hashes_are_not_mangled (__main__.RedactionTests.test_sha256_hashes_are_not_mangled) ... ok
+test_token_and_agent_command_redacted (__main__.RedactionTests.test_token_and_agent_command_redacted) ... ok
+System.Management.Automation.RemoteException
+----------------------------------------------------------------------
+Ran 7 tests in 0.016s
+System.Management.Automation.RemoteException
+OK

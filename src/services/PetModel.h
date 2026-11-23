@@ -20,6 +20,8 @@ PetStyle styleUnlockedAt(uint8_t level);
 
 enum class PetMood : uint8_t { Idle, Happy, Sleep, Celebrate };
 const char* moodName(PetMood mood);
+// Short touch reactions: presentation only, never stored in NVS, never grant XP.
+enum class PetReaction : uint8_t { None, Tickle, GrappleLeft, GrappleRight, Hang, Count };
 
 constexpr uint16_t PET_SCHEMA_VERSION=1;
 struct PetRecord {

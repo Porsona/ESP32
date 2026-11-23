@@ -36,4 +36,20 @@ struct PcTokenRecord {
 static_assert(sizeof(PcTokenRecord)==28,"Change PC token schema version when the layout changes");
 PcTokenRecord makePcTokenRecord(const uint8_t (&token)[PC_TOKEN_BYTES]);
 bool validPcTokenRecord(const PcTokenRecord& record);
+
+// Replay floor (v1.0): the highest accepted counter, checkpointed rarely so a
+// reboot does not reopen the whole counter space. Bound to its token by a
+// CRC-32 tag, so a regenerated token never inherits an old floor.
+constexpr uint16_t PC_COUNTER_SCHEMA_VERSION=1;
+struct PcCounterRecord {
+  uint32_t magic;
+  uint16_t version,bytes;
+  uint32_t tokenTag;
+  uint32_t counterLow,counterHigh;
+  uint32_t checksum;
+};
+static_assert(sizeof(PcCounterRecord)==24,"Change PC counter schema version when the layout changes");
+PcCounterRecord makePcCounterRecord(const uint8_t (&token)[PC_TOKEN_BYTES],uint64_t counter);
+// False for a corrupt record, another token's record or a zero counter.
+bool readPcCounterRecord(const PcCounterRecord& record,const uint8_t (&token)[PC_TOKEN_BYTES],uint64_t& counter);
 }  // namespace deskos

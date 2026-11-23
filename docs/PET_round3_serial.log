@@ -1,0 +1,122 @@
+[2026-11-21 02:30:03.545] ets Jul 29 2019 12:21:46
+[2026-11-21 02:30:03.545] 
+[2026-11-21 02:30:03.545] rst:0x1 (POWERON_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+[2026-11-21 02:30:03.545] configsip: 0, SPIWP:0xee
+[2026-11-21 02:30:03.545] clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+[2026-11-21 02:30:03.545] mode:DIO, clock div:2
+[2026-11-21 02:30:03.545] load:0x3fff0030,len:1184
+[2026-11-21 02:30:03.545] load:0x40078000,len:13232
+[2026-11-21 02:30:03.545] load:0x40080400,len:3028
+[2026-11-21 02:30:03.545] entry 0x400805e4
+[2026-11-21 02:30:04.654] FIRMWARE_VERSION: DESKOS_1.0.0-RC1
+[2026-11-21 02:30:04.654] TOUCH_INIT: CONFIGURED (begin is not a hardware response test)
+[2026-11-21 02:30:04.657] Heap: 254036 bytes
+[2026-11-21 02:30:04.657] DISPLAY_CONFIG: INVERT_ON
+[2026-11-21 02:30:04.657] FOCUS_RESTORE: result=1 running_restored_as_paused=0 focus_ms=1500000 break_ms=300000
+[2026-11-21 02:30:04.657] FOCUS: ms=317 mode=FOCUS state=IDLE remaining_ms=1500000 xp=25 sessions=1 id=2 rewarded_id=2 save_pending=0 error=NONE
+[2026-11-21 02:30:04.657] MISSION_RESTORE: result=LOADED day=2 bonus_xp=0 total_xp=25
+[2026-11-21 02:30:04.657] MISSIONS: ms=331 day=2 done=0/5 focus_anchor=2 rewards=0 bonus_xp=0 total_xp=25 generation=3 save_pending=0 error=NONE
+[2026-11-21 02:30:04.657] QUEST: id=1 title="STUDY SQL" kind=MANUAL xp=10 done=0 rewarded=0
+[2026-11-21 02:30:04.657] QUEST: id=2 title="PRACTICE PYTHON" kind=MANUAL xp=10 done=0 rewarded=0
+[2026-11-21 02:30:04.657] QUEST: id=3 title="READ 10 PAGES" kind=MANUAL xp=10 done=0 rewarded=0
+[2026-11-21 02:30:04.657] QUEST: id=4 title="REVIEW NOTES" kind=MANUAL xp=10 done=0 rewarded=0
+[2026-11-21 02:30:04.657] QUEST: id=5 title="COMPLETE FOCUS" kind=FOCUS xp=10 done=0 rewarded=0
+[2026-11-21 02:30:04.657] PET: load=1 level=1 xp=25 next=100 style=CLASSIC pets=0 last_seen_xp=25
+[2026-11-21 02:30:04.657] WINDOW_RESTORE: load=1 scene=NIGHT speed=NORMAL
+[2026-11-21 02:30:04.657] WEATHER: loc="HO CHI MINH" 10.8231,106.6297 has=1 src=1 temp_deci=265 code=2 hum=89 age_s=-1 fetching=0 error=NONE http=0 failures=0 next_ms=0
+[2026-11-21 02:30:04.657] NET: CONNECTING ssid="<REDACTED>" pass_len=8
+[2026-11-21 02:30:04.657] NET: state=CONNECTING ssid="<REDACTED>" pass_len=8 enabled=1 ip=0.0.0.0 rssi=0 reconnects=0
+[2026-11-21 02:30:04.657] TIME: synced=0 (no NTP yet; quest days stay manual)
+[2026-11-21 02:30:04.657] COMMANDS: HOME | BACK | CAL | RETRY | TEST | DIAG | NEXT | STATUS | MISSIONS | QTITLE <ID> <TITLE> | PET | HELP (newline)
+[2026-11-21 02:30:04.657] NETWORK: WIFI | WIFI SSID <REDACTED>
+[2026-11-21 02:30:04.658] WEATHER: WEATHER | WEATHER REFRESH | WEATHER LOC <lat> <lon> [label]
+[2026-11-21 02:30:04.658] PC MONITOR: PC | PC TOKEN | PC TOKEN NEW
+[2026-11-21 02:30:04.658] SHELL_REGISTRY: READY ids=7 dedicated_apps=6 placeholders=0
+[2026-11-21 02:30:04.658] TOUCH_CAL: LOADED_FROM_NVS
+[2026-11-21 02:30:04.658] TOUCH_CAL: AFFINE x=0.0861848*rawX+0.0025080*rawY-24.917 y=0.0028643*rawX+0.0668754*rawY-15.703
+[2026-11-21 02:30:04.658] TOUCH_CAL: ERRORS rms=2.75 max=2.92 independent_max=14.11
+[2026-11-21 02:30:04.658] APP_SWITCH: id=0 app=HOME duration_us=91812 switches=1 free_heap=207344 largest_free_block=110580
+[2026-11-21 02:30:04.658] DISPLAY_READY
+[2026-11-21 02:30:06.182] NET: CONNECTED ip=192.168.30.151 rssi=-43
+[2026-11-21 02:30:06.182] TIME: SNTP_STARTED tz=Asia/Ho_Chi_Minh(UTC+7)
+[2026-11-21 02:30:06.182] HTTPS_TASK: STARTED stack=12288
+[2026-11-21 02:30:06.182] PC_LINK: LISTENING udp_port=47801
+[2026-11-21 02:30:06.182] WEATHER: loc="HO CHI MINH" 10.8231,106.6297 has=1 src=1 temp_deci=265 code=2 hum=89 age_s=-1 fetching=0 error=NONE http=0 failures=0 next_ms=0
+[2026-11-21 02:30:06.695] TOUCH_CAL: AFFINE x=0.0861848*rawX+0.0025080*rawY-24.917 y=0.0028643*rawX+0.0668754*rawY-15.703
+[2026-11-21 02:30:06.695] TOUCH_CAL: ERRORS rms=2.75 max=2.92 independent_max=14.11
+[2026-11-21 02:30:06.695] FOCUS: ms=2641 mode=FOCUS state=IDLE remaining_ms=1500000 xp=25 sessions=1 id=2 rewarded_id=2 save_pending=0 error=NONE
+[2026-11-21 02:30:06.695] MISSIONS: ms=2651 day=2 done=0/5 focus_anchor=2 rewards=0 bonus_xp=0 total_xp=25 generation=3 save_pending=0 error=NONE
+[2026-11-21 02:30:06.695] QUEST: id=1 title="STUDY SQL" kind=MANUAL xp=10 done=0 rewarded=0
+[2026-11-21 02:30:06.695] QUEST: id=2 title="PRACTICE PYTHON" kind=MANUAL xp=10 done=0 rewarded=0
+[2026-11-21 02:30:06.695] QUEST: id=3 title="READ 10 PAGES" kind=MANUAL xp=10 done=0 rewarded=0
+[2026-11-21 02:30:06.695] QUEST: id=4 title="REVIEW NOTES" kind=MANUAL xp=10 done=0 rewarded=0
+[2026-11-21 02:30:06.695] QUEST: id=5 title="COMPLETE FOCUS" kind=FOCUS xp=10 done=0 rewarded=0
+[2026-11-21 02:30:06.695] PET: load=1 level=1 xp=25 next=100 style=CLASSIC pets=0 last_seen_xp=25
+[2026-11-21 02:30:06.695] WINDOW: scene=NIGHT speed=NORMAL
+[2026-11-21 02:30:06.696] NET: state=CONNECTED ssid="<REDACTED>" pass_len=8 enabled=1 ip=192.168.30.151 rssi=-43 reconnects=0
+[2026-11-21 02:30:06.696] TIME: synced=0 (no NTP yet; quest days stay manual)
+[2026-11-21 02:30:06.696] WEATHER: loc="HO CHI MINH" 10.8231,106.6297 has=1 src=1 temp_deci=265 code=2 hum=89 age_s=-1 fetching=0 error=NONE http=0 failures=0 next_ms=0
+[2026-11-21 02:30:06.696] PC: link=WAITING token=1 listening=1 accepted=0 rejected=0 last_reject=ACCEPTED dropped=0 port=47801 replay_floor=1
+[2026-11-21 02:30:06.696] MEMORY: free_heap=188952 largest_free_block=110580 min_free_heap=184388
+[2026-11-21 02:30:08.023] TOUCH_INPUT: FIRST_VALID_RAW (hardware acceptance still PENDING)
+[2026-11-21 02:30:08.023] TOUCH: RAW x=945 y=1436 z=2368
+[2026-11-21 02:30:08.023] TOUCH: PIXEL x=60 y=83
+[2026-11-21 02:30:08.023] TOUCH: EVENT PRESS
+[2026-11-21 02:30:08.023] TOUCH: RAW x=929 y=1436 z=1974
+[2026-11-21 02:30:08.023] TOUCH: PIXEL x=59 y=83
+[2026-11-21 02:30:08.023] TOUCH: EVENT RELEASE
+[2026-11-21 02:30:08.023] TOUCH: EVENT TAP
+[2026-11-21 02:30:08.023] APP_SWITCH: id=1 app=PET duration_us=90995 switches=2 free_heap=188952 largest_free_block=110580
+[2026-11-21 02:30:08.964] MEMORY: uptime_ms=5000 mode=SHELL app=PET switches=2 free_heap=188952 largest_free_block=110580 min_free_heap=184388 loop_stack_free=5432
+[2026-11-21 02:30:13.980] TOUCH: RAW x=2915 y=3373 z=1818
+[2026-11-21 02:30:13.980] TOUCH: PIXEL x=235 y=218
+[2026-11-21 02:30:13.980] TOUCH: EVENT PRESS
+[2026-11-21 02:30:13.980] TOUCH: RAW x=2914 y=3369 z=1622
+[2026-11-21 02:30:13.980] TOUCH: PIXEL x=235 y=218
+[2026-11-21 02:30:13.980] TOUCH: EVENT RELEASE
+[2026-11-21 02:30:13.980] TOUCH: EVENT TAP
+[2026-11-21 02:30:13.980] APP_SWITCH: id=0 app=HOME duration_us=91377 switches=3 free_heap=188952 largest_free_block=110580
+[2026-11-21 02:30:13.980] MEMORY: uptime_ms=10000 mode=SHELL app=HOME switches=3 free_heap=188952 largest_free_block=110580 min_free_heap=184388 loop_stack_free=5432
+[2026-11-21 02:30:14.464] TOUCH: RAW x=773 y=1453 z=2301
+[2026-11-21 02:30:14.464] TOUCH: PIXEL x=45 y=84
+[2026-11-21 02:30:14.464] TOUCH: EVENT PRESS
+[2026-11-21 02:30:14.464] TOUCH: RAW x=791 y=1498 z=1375
+[2026-11-21 02:30:14.464] TOUCH: PIXEL x=47 y=87
+[2026-11-21 02:30:14.464] TOUCH: EVENT RELEASE
+[2026-11-21 02:30:14.464] TOUCH: EVENT TAP
+[2026-11-21 02:30:14.464] APP_SWITCH: id=1 app=PET duration_us=90609 switches=4 free_heap=188952 largest_free_block=110580
+[2026-11-21 02:30:15.395] TOUCH: RAW x=3221 y=3343 z=1928
+[2026-11-21 02:30:15.395] TOUCH: PIXEL x=261 y=217
+[2026-11-21 02:30:15.395] TOUCH: EVENT PRESS
+[2026-11-21 02:30:15.395] TOUCH: RAW x=3227 y=3286 z=797
+[2026-11-21 02:30:15.395] TOUCH: PIXEL x=261 y=213
+[2026-11-21 02:30:15.395] TOUCH: EVENT RELEASE
+[2026-11-21 02:30:15.395] TOUCH: EVENT TAP
+[2026-11-21 02:30:15.395] APP_SWITCH: id=0 app=HOME duration_us=91349 switches=5 free_heap=188952 largest_free_block=110580
+[2026-11-21 02:30:18.968] MEMORY: uptime_ms=15000 mode=SHELL app=HOME switches=5 free_heap=188952 largest_free_block=110580 min_free_heap=184388 loop_stack_free=5432
+[2026-11-21 02:30:21.582] WEATHER: loc="HO CHI MINH" 10.8231,106.6297 has=1 src=1 temp_deci=265 code=2 hum=89 age_s=326 fetching=1 error=NONE http=0 failures=0 next_ms=0
+[2026-11-21 02:30:21.850] BLOB_STORE: SAVED ns=deskos-pc key=ctr bytes=24
+[2026-11-21 02:30:23.966] MEMORY: uptime_ms=20000 mode=SHELL app=HOME switches=5 free_heap=131184 largest_free_block=77812 min_free_heap=121868 loop_stack_free=5432
+[2026-11-21 02:30:28.980] MEMORY: uptime_ms=25000 mode=SHELL app=HOME switches=5 free_heap=128364 largest_free_block=73716 min_free_heap=118736 loop_stack_free=5432
+[2026-11-21 02:30:30.203] HTTPS: code=200 bytes=505 ms=8599 cert_date=VALID stack_free=6744 heap=187360 max_block=110580 min_heap=118736
+[2026-11-21 02:30:30.203] BLOB_STORE: SAVED ns=deskos-wthr key=cache bytes=32
+[2026-11-21 02:30:30.203] WEATHER: loc="HO CHI MINH" 10.8231,106.6297 has=1 src=2 temp_deci=264 code=2 hum=89 age_s=0 fetching=0 error=NONE http=200 failures=0 next_ms=899992
+[2026-11-21 02:30:33.980] MEMORY: uptime_ms=30000 mode=SHELL app=HOME switches=5 free_heap=187736 largest_free_block=110580 min_free_heap=118736 loop_stack_free=5432
+[2026-11-21 02:30:38.969] MEMORY: uptime_ms=35000 mode=SHELL app=HOME switches=5 free_heap=187736 largest_free_block=110580 min_free_heap=118736 loop_stack_free=5432
+[2026-11-21 02:30:42.847] TOUCH_CAL: AFFINE x=0.0861848*rawX+0.0025080*rawY-24.917 y=0.0028643*rawX+0.0668754*rawY-15.703
+[2026-11-21 02:30:42.847] TOUCH_CAL: ERRORS rms=2.75 max=2.92 independent_max=14.11
+[2026-11-21 02:30:42.847] FOCUS: ms=38782 mode=FOCUS state=IDLE remaining_ms=1500000 xp=25 sessions=1 id=2 rewarded_id=2 save_pending=0 error=NONE
+[2026-11-21 02:30:42.847] MISSIONS: ms=38793 day=2 done=0/5 focus_anchor=2 rewards=0 bonus_xp=0 total_xp=25 generation=3 save_pending=0 error=NONE
+[2026-11-21 02:30:42.847] QUEST: id=1 title="STUDY SQL" kind=MANUAL xp=10 done=0 rewarded=0
+[2026-11-21 02:30:42.847] QUEST: id=2 title="PRACTICE PYTHON" kind=MANUAL xp=10 done=0 rewarded=0
+[2026-11-21 02:30:42.847] QUEST: id=3 title="READ 10 PAGES" kind=MANUAL xp=10 done=0 rewarded=0
+[2026-11-21 02:30:42.847] QUEST: id=4 title="REVIEW NOTES" kind=MANUAL xp=10 done=0 rewarded=0
+[2026-11-21 02:30:42.847] QUEST: id=5 title="COMPLETE FOCUS" kind=FOCUS xp=10 done=0 rewarded=0
+[2026-11-21 02:30:42.847] PET: load=1 level=1 xp=25 next=100 style=CLASSIC pets=0 last_seen_xp=25
+[2026-11-21 02:30:42.847] WINDOW: scene=NIGHT speed=NORMAL
+[2026-11-21 02:30:42.847] NET: state=CONNECTED ssid="<REDACTED>" pass_len=8 enabled=1 ip=192.168.30.151 rssi=-41 reconnects=0
+[2026-11-21 02:30:42.847] TIME: synced=1 local=02:30 day_key=20778 syncs=1
+[2026-11-21 02:30:42.847] WEATHER: loc="HO CHI MINH" 10.8231,106.6297 has=1 src=2 temp_deci=264 code=2 hum=89 age_s=12 fetching=0 error=NONE http=200 failures=0 next_ms=887351
+[2026-11-21 02:30:42.847] PC: link=CONNECTED token=1 listening=1 accepted=15 rejected=0 last_reject=ACCEPTED dropped=0 port=47801 replay_floor=1
+[2026-11-21 02:30:42.847] MEMORY: free_heap=187736 largest_free_block=110580 min_free_heap=118736
+[2026-11-21 02:30:43.966] MEMORY: uptime_ms=40000 mode=SHELL app=HOME switches=5 free_heap=187736 largest_free_block=110580 min_free_heap=118736 loop_stack_free=5432

@@ -2,7 +2,7 @@
 #include <string.h>
 
 namespace deskos {
-namespace { const char* const NS="deskos-pc"; const char* const KEY="token"; }
+namespace { const char* const NS="deskos-pc"; const char* const KEY="token"; const char* const FLOOR_KEY="ctr"; }
 
 const char* pcLinkName(PcLinkState s) {
   switch (s) {
@@ -30,7 +30,18 @@ void PcMonitorService::begin() {
   PcTokenRecord r;
   if (store_.load(NS,KEY,&r,sizeof(r))==BlobLoad::Loaded && validPcTokenRecord(r)) {
     memcpy(token_,r.token,PC_TOKEN_BYTES); hasToken_=true;
+    PcCounterRecord c;
+    uint64_t floor=0;
+    if (store_.load(NS,FLOOR_KEY,&c,sizeof(c))==BlobLoad::Loaded && readPcCounterRecord(c,token_,floor))
+      lastCounter_=savedFloor_=floor;  // Packets captured before the last checkpoint stay rejected.
   }
+}
+void PcMonitorService::checkpointCounter(uint32_t now) {
+  if (lastCounter_<=savedFloor_) return;
+  if (floorSaveTried_ && now-lastFloorSaveMs_<FLOOR_SAVE_MS) return;
+  floorSaveTried_=true; lastFloorSaveMs_=now;  // Throttled even when the write fails.
+  const PcCounterRecord r=makePcCounterRecord(token_,lastCounter_);
+  if (store_.save(NS,FLOOR_KEY,&r,sizeof(r))) savedFloor_=lastCounter_;
 }
 bool PcMonitorService::regenerateToken() {
   uint8_t fresh[PC_TOKEN_BYTES];
@@ -40,7 +51,8 @@ bool PcMonitorService::regenerateToken() {
   const PcTokenRecord r=makePcTokenRecord(fresh);
   if (!store_.save(NS,KEY,&r,sizeof(r))) return false;  // Only switch after the token is durable.
   memcpy(token_,fresh,PC_TOKEN_BYTES); hasToken_=true;
-  lastCounter_=0; hasStats_=false; ++revision_;
+  // The old floor's token tag no longer matches, so it is ignored without a write.
+  lastCounter_=savedFloor_=0; floorSaveTried_=false; hasStats_=false; ++revision_;
   return true;
 }
 bool PcMonitorService::ensureToken() { return hasToken_ || regenerateToken(); }
@@ -69,6 +81,7 @@ PcRx PcMonitorService::receive(const char* data,size_t length,uint32_t source,ui
     if (skew>MAX_SKEW_S) return reject(PcRx::Stale);
   }
   stats_=parsed; lastCounter_=parsed.counter; lastValidMs_=now; hasStats_=true; ++accepted_; ++revision_;
+  if (time_.valid()) checkpointCounter(now);
   return PcRx::Accepted;
 }
 PcLinkState PcMonitorService::state(bool networkUp) const {

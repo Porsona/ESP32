@@ -1,7 +1,7 @@
-# CYD DeskOS — Architecture (M0–M6)
+# CYD DeskOS — Architecture (M0–M6, v1.0.0-rc1)
 
-Firmware **M6_PCMON_01**, 2026-11-20, environment `cyd_ili9341`, ESP32-2432S028R.
-M0 PASS và M1 PASS trên phần cứng (người dùng nghiệm thu). M2–M6: **SOFTWARE PASS**
+Firmware **DESKOS_1.0.0-RC1**, 2026-11-20, environment `cyd_ili9341`, ESP32-2432S028R.
+M0 PASS và M1 PASS trên phần cứng (người dùng nghiệm thu). M2–M6 + RC1: **SOFTWARE PASS**
 (build + test host), **HARDWARE PENDING**. Trạng thái chi tiết:
 [DEVELOPMENT_STATUS.md](DEVELOPMENT_STATUS.md); kế hoạch thử:
 [HARDWARE_TEST_PLAN.md](HARDWARE_TEST_PLAN.md); hướng dẫn: [USER_GUIDE.md](USER_GUIDE.md),
@@ -17,7 +17,8 @@ M0 PASS và M1 PASS trên phần cứng (người dùng nghiệm thu). M2–M6: 
 | M3 | `592f658` | checkpoint |
 | M4 | `200f4ab` | checkpoint |
 | M5 | `80d0ebd` | checkpoint |
-| M6 | commit cuối của branch | checkpoint + tài liệu |
+| M6 | `f44efe0` / `759405e` | checkpoint + tài liệu |
+| RC1 | tag `v1.0.0-rc1`, branch `release/v1.0.0` | hardening + tài liệu phát hành |
 
 ## Phần cứng không đổi
 
@@ -70,10 +71,13 @@ Mọi service nền chạy ở mọi màn hình (kể cả CAL/TEST/DIAG); đổ
 service. Chỉ app đang hiển thị được `update/render`.
 
 Tác vụ blocking duy nhất (DNS/TLS/HTTP) chạy trong `HttpsFetchTask`: một task
-FreeRTOS cố định, stack 12 KB, core 0, priority 1, tạo một lần khi có IP; giao tiếp
-bằng state + critical section, buffer URL 256 B và body 2 KB cố định. Timeout:
-connect 6 s, handshake 12 s, read 8 s; WeatherService còn watchdog 30 s và gắn
-request id để bỏ kết quả muộn.
+FreeRTOS cố định, stack 12 KB, core 0, **priority 0** (từ RC1: framework bật
+task-watchdog panic 5 s theo dõi IDLE0, nên task TLS không được chiếm IDLE0), tạo một
+lần khi có IP; giao tiếp bằng state + critical section, buffer URL 256 B và body 2 KB
+cố định. Trình tự mỗi request: `WiFiClientSecure::connect` (DNS + TCP + TLS, chain +
+hostname) → kiểm ngày chứng chỉ leaf nếu NTP hợp lệ → HTTP/1.0 GET trên kết nối đã
+xác thực. Timeout: connect 6 s, handshake 12 s, read 8 s; WeatherService còn watchdog
+30 s và gắn request id để bỏ kết quả muộn.
 
 ## XP và phần thưởng (M1/M2)
 
@@ -100,6 +104,7 @@ lúc 00:00 giờ Việt Nam (UTC+7); NEW DAY thủ công vẫn dùng được.
 | `deskos-wthr/cache` | Thời tiết gần nhất, 32 B | M5 | Mỗi lần fetch thành công (≥15 phút) |
 | `deskos-net/ssid,pass,en` | Wi-Fi (string) | M5 | Lệnh `WIFI …` |
 | `deskos-pc/token` | Token 128-bit, 28 B | M6 | Lần đầu có Wi-Fi / `PC TOKEN NEW` |
+| `deskos-pc/ctr` | Replay floor (counter + tag token), 24 B | RC1 | Gói hợp lệ đầu tiên mỗi boot, sau đó ≤ 1 lần/15 phút, chỉ khi có NTP |
 
 Không có lệnh erase. Mỗi record được validate (magic/version/size/CRC/range); hỏng
 → mặc định của riêng record đó, không ảnh hưởng record khác. Blob ghi qua
@@ -113,12 +118,16 @@ nên không tự lưu bản sao credentials.
 - Reconnect: auto-reconnect của SDK + `WiFi.begin` lại theo backoff 10 s → 2 phút.
 - HTTPS Open-Meteo: `WiFiClientSecure` với `ROOT_CA_BUNDLE` (ISRG Root X1/X2, GTS
   Root R1, DigiCert Global Root G2, trích nguyên văn từ Mozilla bundle). Kiểm tra
-  chain + hostname luôn bật; không dùng `setInsecure`.
+  chain + hostname luôn bật; không dùng `setInsecure`. mbedTLS của framework không
+  kiểm ngày (`MBEDTLS_HAVE_TIME_DATE` tắt) nên RC1 kiểm `notBefore/notAfter` của leaf
+  sau handshake bằng `certDateStatus()` (`TimeModel.h`) khi NTP hợp lệ; log
+  `cert_date=VALID|EXPIRED|NOT_YET_VALID|BAD_DATE|DATE_UNCHECKED_NO_NTP`.
 - NTP: pool.ntp.org / time.google.com / time.cloudflare.com, TZ `<+07>-7`.
   `valid()` chỉ đúng sau callback sync trong lần boot này.
 - PC Monitor: UDP 47801 nhận-only, chỉ khi Wi-Fi lên; chỉ chấp nhận nguồn cùng
   subnet; giới hạn 20 gói/s; HMAC-SHA256 (constant-time compare) trước khi đọc
-  field; counter tăng dần chống replay; lệch giờ ≤300 s khi đồng hồ hợp lệ; chỉ
+  field; counter tăng dần chống replay, với floor lưu NVS để reboot không mở lại
+  toàn bộ không gian counter (RC1); lệch giờ ≤300 s khi đồng hồ hợp lệ; chỉ
   parse số vào struct cố định — không có lệnh, không có thực thi. Agent chỉ gửi.
 
 ## UI và hiệu năng
@@ -132,6 +141,8 @@ phục dải màu trời. Animation dựa trên thời gian, giới hạn bướ
 Test host chứng minh: không có cấp phát heap trong update/render/touch ổn định
 (bộ đếm `operator new`), mọi lệnh vẽ trong 320×240, khung cửa sổ không bị vẽ đè.
 
-Bộ nhớ tĩnh: RAM 52,868 / 327,680 B; Flash 1,038,233 / 1,310,720 B. Heap runtime
-(Wi-Fi ~40–60 KB, TLS handshake ~40 KB tạm thời) cần đo trên board qua log
-`MEMORY` / `HTTPS: … heap=`.
+Bộ nhớ tĩnh (RC1): RAM 52,892 / 327,680 B; Flash 1,038,365 / 1,310,720 B. Heap
+runtime (Wi-Fi ~40–60 KB, TLS handshake ~40 KB tạm thời) cần đo trên board qua log
+`MEMORY … largest_free_block min_free_heap loop_stack_free` và
+`HTTPS: … heap= max_block= min_heap= stack_free=`; công cụ
+`tools/hw_validation/deskos_serial_log.py analyze` tóm tắt xu hướng.

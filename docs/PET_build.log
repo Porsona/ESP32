@@ -1,0 +1,62 @@
+Processing cyd_ili9341 (platform: espressif32@6.4.0; board: esp32dev; framework: arduino)
+--------------------------------------------------------------------------------
+Verbose mode can be enabled via `-v, --verbose` option
+CONFIGURATION: https://docs.platformio.org/page/boards/espressif32/esp32dev.html
+PLATFORM: Espressif 32 (6.4.0) > Espressif ESP32 Dev Module
+HARDWARE: ESP32 240MHz, 320KB RAM, 4MB Flash
+DEBUG: Current (cmsis-dap) External (cmsis-dap, esp-bridge, esp-prog, iot-bus-jtag, jlink, minimodule, olimex-arm-usb-ocd, olimex-arm-usb-ocd-h, olimex-arm-usb-tiny-h, olimex-jtag-tiny, tumpa)
+PACKAGES: 
+ - framework-arduinoespressif32 @ 3.20011.230801 (2.0.11) 
+ - tool-esptoolpy @ 1.40501.0 (4.5.1) 
+ - toolchain-xtensa-esp32 @ 8.4.0+2021r2-patch5
+LDF: Library Dependency Finder -> https://bit.ly/configure-pio-ldf
+LDF Modes: Finder ~ chain, Compatibility ~ soft
+Found 35 compatible libraries
+Scanning dependencies...
+Dependency Graph
+|-- TFT_eSPI @ 2.5.43
+|-- XPT2046_Touchscreen @ 0.0.0+sha.d57f64c
+|-- Preferences @ 2.0.0
+|-- HTTPClient @ 2.0.0
+|-- WiFiClientSecure @ 2.0.0
+|-- WiFi @ 2.0.0
+|-- SPI @ 2.0.0
+Building in release mode
+Compiling .pio\build\cyd_ili9341\src\apps\PixelPetScreen.cpp.o
+Compiling .pio\build\cyd_ili9341\src\main.cpp.o
+Compiling .pio\build\cyd_ili9341\src\services\PetModel.cpp.o
+Compiling .pio\build\cyd_ili9341\src\services\PetService.cpp.o
+Compiling .pio\build\cyd_ili9341\src\ui\PetSprites.cpp.o
+Compiling .pio\build\cyd_ili9341\src\ui\PixelRenderer.cpp.o
+In file included from include/DisplayHAL.h:3,
+                 from src/ui/PixelRenderer.h:2,
+                 from src/ui/PixelRenderer.cpp:1:
+.pio/libdeps/cyd_ili9341/TFT_eSPI/TFT_eSPI.h:973:8: warning: #warning >>>>------>> TOUCH_CS pin not defined, TFT_eSPI touch functions will not be available! [-Wcpp]
+       #warning >>>>------>> TOUCH_CS pin not defined, TFT_eSPI touch functions will not be available!
+        ^~~~~~~
+In file included from include/DisplayHAL.h:3,
+                 from src/apps/../ui/PixelRenderer.h:2,
+                 from src/apps/PixelPetScreen.h:3,
+                 from src/apps/PixelPetScreen.cpp:1:
+.pio/libdeps/cyd_ili9341/TFT_eSPI/TFT_eSPI.h:973:8: warning: #warning >>>>------>> TOUCH_CS pin not defined, TFT_eSPI touch functions will not be available! [-Wcpp]
+       #warning >>>>------>> TOUCH_CS pin not defined, TFT_eSPI touch functions will not be available!
+        ^~~~~~~
+In file included from include/DisplayHAL.h:3,
+                 from src/main.cpp:5:
+.pio/libdeps/cyd_ili9341/TFT_eSPI/TFT_eSPI.h:973:8: warning: #warning >>>>------>> TOUCH_CS pin not defined, TFT_eSPI touch functions will not be available! [-Wcpp]
+       #warning >>>>------>> TOUCH_CS pin not defined, TFT_eSPI touch functions will not be available!
+        ^~~~~~~
+Linking .pio\build\cyd_ili9341\firmware.elf
+Retrieving maximum program size .pio\build\cyd_ili9341\firmware.elf
+Checking size .pio\build\cyd_ili9341\firmware.elf
+Advanced Memory Usage is available via "PlatformIO Home > Project Inspect"
+RAM:   [==        ]  16.9% (used 55252 bytes from 327680 bytes)
+Flash: [========  ]  81.6% (used 1068945 bytes from 1310720 bytes)
+Building .pio\build\cyd_ili9341\firmware.bin with action:
+  "$PYTHONEXE" "$OBJCOPY" --chip esp32 elf2image --flash_mode ${__get_board_flash_mode(__env__)} --flash_freq ${__get_board_f_flash(__env__)} --flash_size 4MB --elf-sha256-offset 0xb0 -o $TARGET $SOURCES
+Building .pio\build\cyd_ili9341\firmware.bin
+esptool.py v4.5.1
+Creating esp32 image...
+Merged 25 ELF sections
+Successfully created esp32 image.
+========================= [SUCCESS] Took 15.92 seconds =========================
