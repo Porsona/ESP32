@@ -6,9 +6,15 @@ Cập nhật 2026-11-20. Phân loại: **HW-PENDING** (chưa có bằng chứng 
 
 ## Phần cứng / runtime
 
+Pixel Pet VOLT (2026-11-23) đã build và qua toàn bộ test trên máy. Sprite 48×48 phóng 2×,
+11 màu, buffer ghép 2.352 B RAM tĩnh, tương tác chạm (vuốt/giữ được nhận qua `Cancel` của
+`AppManager`: vuốt > 8 px, giữ > 700 ms). VOLT chưa nạp. Màu thật của panel, độ mượt, độ nhạy
+vuốt/giữ trên cảm ứng điện trở vẫn **HARDWARE PENDING**. Ảnh xem trước chỉ chứa sprite, không
+mô phỏng effect ở lề hoặc phần cứng. Xem [báo cáo](PET_VOLT.md).
+
 | # | Loại | Vấn đề | Ảnh hưởng | Cách theo dõi / hướng xử lý |
 | --- | --- | --- | --- | --- |
-| K1 | HW-PENDING | M2–M6 và RC1 chưa chạy trên board | Chưa thể phát hành v1.0.0 | [HARDWARE_TEST_PLAN.md](HARDWARE_TEST_PLAN.md) |
+| K1 | HW-PENDING | M2–M6 và RC1 chưa hoàn tất nghiệm thu trên board; các bản prototype pet đã có log nạp/boot/network ngày 2026-11-21 | Chưa thể phát hành v1.0.0 | [HARDWARE_TEST_PLAN.md](HARDWARE_TEST_PLAN.md) |
 | K2 | HW-PENDING | Heap runtime khi Wi-Fi + TLS chưa đo (TLS cần ~40 KB liên tục) | Nếu phân mảnh, HTTPS có thể lỗi `CONNECT_FAILED` | Log `MEMORY … largest_free_block / min_free_heap`, `HTTPS … max_block`; logger báo nếu < 45 KB |
 | K3 | HW-PENDING | Wi-Fi tăng dòng; nguồn USB yếu có thể gây brownout | Reset bất ngờ | Logger đếm `Brownout`/`rst:`; dùng cổng/cáp tốt |
 | K4 | LIMITATION | Framework bật `TASK_WDT_PANIC` (5 s, theo dõi IDLE0). HTTPS task đã hạ xuống priority 0 để không bỏ đói IDLE0 | Rủi ro còn lại thấp; chưa đo thời gian handshake thật | Log `HTTPS: … ms=`; tìm `Task watchdog got triggered` |

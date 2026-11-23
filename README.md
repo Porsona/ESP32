@@ -17,13 +17,18 @@ tiết trực tiếp và bảng theo dõi PC — không dùng LVGL, chạy trên
 | --- | --- | --- |
 | **Focus Quest** | Pomodoro 25 phút / nghỉ 5 phút, +25 XP mỗi phiên hoàn thành, chạy nền qua mọi app | Không |
 | **Daily Missions** | 5 nhiệm vụ mỗi ngày, +10 XP mỗi nhiệm vụ (không cộng trùng), NEW DAY, tự sang ngày lúc 00:00 khi có NTP | Không (NTP tùy chọn) |
-| **Pixel Pet** | BIT lên level theo tổng XP, chạm để vuốt, ngủ khi để yên, style mở theo level | Không |
+| **Pixel Pet** | VOLT — robot mascot của DeskOS — lên level theo tổng XP; chạm/vuốt/giữ để tương tác; ngủ khi để yên; style mở theo level | Không |
 | **Pixel Window** | Cảnh DAY / NIGHT / RAIN / AUTO, tốc độ SLOW/NORMAL/FAST | AUTO cần NTP + thời tiết |
 | **Living Weather** | Open-Meteo qua HTTPS đã xác thực, cập nhật 15 phút, cache khi offline | Có |
 | **PC Monitor** | CPU/RAM/DISK/mạng/pin từ laptop Windows qua UDP LAN có HMAC | Có (LAN) |
 
 XP dùng chung: Focus + Missions; Pet chỉ đọc XP. Mất Wi-Fi thì các app offline vẫn
 chạy bình thường.
+
+> **Pixel Pet VOLT (2026-11-23, chưa phát hành):** robot mascot nguyên bản của DeskOS
+> (48×48 phóng 2×, vẫn 96×96) với **tương tác chạm**: chạm đầu xoa đầu, chạm bụng cù, chạm hai
+> bên bắn móc cáp, vuốt, giữ để treo ngược. Build + test **SOFTWARE PASS**; hiển thị/cảm ứng thật
+> **HARDWARE PENDING**. Xem [báo cáo và ảnh xem trước](docs/PET_VOLT.md).
 
 ## Phần cứng và phần mềm cần có
 

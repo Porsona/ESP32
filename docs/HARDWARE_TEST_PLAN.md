@@ -6,6 +6,11 @@ gửi kết quả + log Serial. Agent (Claude) không Upload, không erase, khô
 Cách ghi kết quả: thay `PENDING` bằng `PASS` / `FAIL` (kèm dòng Serial và mô tả/ảnh).
 Khi FAIL: gửi log; cột "Nếu FAIL" chỉ file cần xem và test hồi quy liên quan.
 
+> **Pixel Pet VOLT 2026-11-23 (chưa phát hành):** mục Pet bên dưới áp dụng cho robot VOLT 48×48
+> phóng 2× có tương tác chạm (cách nạp trong [PET_VOLT.md](PET_VOLT.md); đối chiếu SHA256 với
+> [DEVELOPMENT_STATUS.md](DEVELOPMENT_STATUS.md)). SHA256 ở bước chuẩn bị bên dưới thuộc tag RC1
+> gốc. Các mục Pet P01–P08 vẫn PENDING cho đến khi chủ board kiểm tra hình ảnh/timing/cảm ứng trên màn thật.
+
 ## 0. Chuẩn bị (bắt buộc, theo thứ tự)
 
 1. Đóng mọi Serial Monitor đang giữ COM5.
@@ -61,12 +66,14 @@ Khi FAIL: gửi log; cột "Nếu FAIL" chỉ file cần xem và test hồi quy 
 
 | ID | Thao tác | Kỳ vọng | Serial cần thấy | Kết quả | Nếu FAIL: kiểm tra |
 | --- | --- | --- | --- | --- | --- |
-| P01 | Mở PET | BIT 96×96, LV theo XP (LV2 ở 100 XP, LV3 ở 300…), thanh tiến độ, XP = STATUS | `PET: level=… xp=…` | PENDING | `src/services/PetModel.cpp`; `pet_tests P01` |
-| P02 | Chạm BIT | Mặt HAPPY + tim, PETS tăng; XP **không** đổi | `FOCUS`/`MISSIONS` không đổi xp | PENDING | `P02` |
-| P03 | Để yên 45 s; chạm; nút SLEEP/WAKE | SLEEP + "Z" → tỉnh; nút hoạt động | — | PENDING | `src/services/PetService.cpp` |
+| P01 | Mở PET | Nhãn VOLT; robot mũ bạc hà, visor tối với mắt LED, ăng-ten + tai vàng, thân tím có lõi sáng, găng hồng, hai ủng vàng tách; sprite 48×48 phóng 2× = 96×96; LV/XP khớp STATUS | `PET: level=… xp=…` | PENDING | `src/ui/PetSprites.cpp`; `pet_tests P01/P06/P07` |
+| P02 | Chạm đầu VOLT | HAPPY giơ tay vẫy 2 pha, mắt ^ ^ + tim, PETS tăng; XP **không** đổi | `FOCUS`/`MISSIONS` không đổi xp | PENDING | `P02`, `P06`, `P08` |
+| P03 | Để yên 45 s; chạm; nút SLEEP/WAKE | SLEEP ngồi duỗi chân, đầu gục, mắt khép + "Z" → tỉnh; nút hoạt động | — | PENDING | `src/services/PetService.cpp`; `P06` |
 | P04 | STYLE dưới / trên LV3; reboot | Báo "NEXT STYLE UNLOCKS AT LV 3"; đủ level đổi style, giữ sau reboot | `BLOB_STORE: SAVED ns=deskos-pet` | PENDING | `P03`, `P04` |
-| P05 | Kiếm XP rồi mở PET | "+N XP!" hoặc "LEVEL UP!" | — | PENDING | `P02` |
+| P05 | Kiếm XP rồi mở PET | "+N XP! VOLT IS HAPPY" hoặc "LEVEL UP!"; lên level giơ hai tay xen kẽ nhún người + tia sáng | — | PENDING | `P02`, `P06`, `P07` |
 | P06 | Quan sát 1 phút; HOME/BACK | Animation mượt, không nhấp nháy toàn màn | — | PENDING | `src/apps/PixelPetScreen.cpp`; `P05` |
+| P07 | Đổi các style đã mở ở LV1/3/5/7/10; quan sát cả ngủ/vẫy/ăn mừng | Mọi style vẫn là VOLT; STAR = mắt sao vàng, HEART = mắt tim hồng, CROWN thêm vương miện, AURA thêm tia sáng; không còn tên pet cũ | — | PENDING | `PetSprites.cpp`; `P06/P07`; style chưa mở kiểm tra sau khi đủ XP |
+| P08 | Chạm bụng; chạm khoảng trống trái rồi phải; vuốt ngang qua pet; giữ yên ~1 s; nhấn SLEEP rồi chạm bụng | Cười lắc + "HA!" (PETS +1); bắn móc cáp đúng phía, có cáp + móc neo vàng ở lề; vuốt = vẫy + tim (PETS +1 mỗi lần vuốt); treo ngược đung đưa ~4 s rồi trở lại; đang ngủ thì tỉnh và cười; nút vẫn hoạt động, XP không đổi | `PET: … pets=` tăng đúng | PENDING | `src/apps/PixelPetScreen.cpp`, `PetService.cpp`; `P08` |
 
 ## 4. M4 Pixel Window
 

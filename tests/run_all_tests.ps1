@@ -57,4 +57,7 @@ try {
     if ($LASTEXITCODE -ne 0) { throw "Python agent tests failed: $LASTEXITCODE" }
     & $Python -I tools/hw_validation/test_deskos_serial_log.py
     if ($LASTEXITCODE -ne 0) { throw "Serial log tool tests failed: $LASTEXITCODE" }
+    # Pet sprite data must match its generator (composition and overlay invariants re-checked).
+    & $Python -I tools/pet_art/generate_pet.py --check
+    if ($LASTEXITCODE -ne 0) { throw "Pet sprite data is stale: $LASTEXITCODE" }
 } finally { $env:PATH = $previousPath; Pop-Location }

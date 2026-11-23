@@ -1,5 +1,25 @@
 # Release Notes
 
+## Chưa phát hành — Pixel Pet VOLT + tương tác chạm — 2026-11-23
+
+- Pixel Pet là **VOLT**, robot mascot nguyên bản của DeskOS (48×48 phóng 2× trong vùng 96×96 cũ):
+  mũ bạc hà, visor tối với mắt LED, ăng-ten và tai bu-lông vàng, thân tím có lõi phát sáng, găng
+  hồng, ủng vàng — đúng bảng màu Retro Pixel.
+- **Tương tác chạm:** chạm đầu = xoa đầu (vẫy + tim), chạm bụng = cù (cười, "HA!"), chạm khoảng
+  trống hai bên = bắn móc cáp về phía đó, vuốt = xoa đầu, giữ > 0,7 s = treo ngược đung đưa 4 s;
+  chạm khi ngủ sẽ đánh thức. Phản ứng chỉ là trạng thái hiển thị: không ghi NVS, không cộng XP;
+  `AppManager` không đổi.
+- IDLE thở + chớp mắt; SLEEP ngồi xếp bằng; CELEBRATE giơ tay + nhún. STAR EYES, HEART EYES,
+  CROWN, AURA giữ mức mở khóa cũ. Icon Home là đầu robot.
+- Hình sinh bằng `tools/pet_art/generate_pet.py` → `src/ui/PetSpriteData.h` (11 màu); firmware
+  ghép frame + mắt LED + vương miện vào buffer tĩnh 2.352 B; treo ngược = lật dọc frame Cheer tại
+  chỗ. Không heap, không xóa toàn màn khi animation.
+- Giữ nguyên record `deskos-pet/state` 24 B version 1, XP/level, phần cứng, cảm ứng, Wi-Fi,
+  token PC và vị trí thời tiết.
+- **SOFTWARE PASS / HARDWARE PENDING**; số liệu build/test trong [DEVELOPMENT_STATUS.md](DEVELOPMENT_STATUS.md).
+  VOLT chưa nạp lên board; chưa tag.
+- [Báo cáo, ảnh xem trước và cách nạp](PET_VOLT.md).
+
 ## v1.0.0-rc1 — 2026-11-20 (Release Candidate, HARDWARE PENDING)
 
 Firmware `DESKOS_1.0.0-RC1`, banner `DESKOS 1.0`. Bản ứng viên phát hành đầu tiên

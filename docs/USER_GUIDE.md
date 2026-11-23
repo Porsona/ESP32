@@ -21,7 +21,7 @@ Home có 6 tile; mọi app có BACK / HOME ở dải dưới (y=200..239).
 | --- | --- | --- |
 | FOCUS | Pomodoro 25/5, +25 XP mỗi phiên hoàn thành | [FOCUS_QUEST.md](FOCUS_QUEST.md) |
 | MISSIONS | 5 quest mỗi ngày, +10 XP mỗi quest, NEW DAY | [DAILY_MISSIONS.md](DAILY_MISSIONS.md) |
-| PET | BIT lên level theo tổng XP; chạm để vuốt; style mở theo level | [TEST_REPORT_M3.md](TEST_REPORT_M3.md) |
+| PET | VOLT (robot mascot) lên level theo tổng XP; chạm đầu = xoa đầu, chạm bụng = cù, chạm hai bên = bắn móc cáp, vuốt = xoa, giữ ~1 s = treo ngược; style mở theo level | [PET_VOLT.md](PET_VOLT.md) |
 | WINDOW | Cửa sổ pixel DAY/NIGHT/RAIN/AUTO, tốc độ SLOW/NORMAL/FAST | [TEST_REPORT_M4.md](TEST_REPORT_M4.md) |
 | WEATHER | Thời tiết Open-Meteo, cập nhật 15 phút, cần Wi-Fi | [TEST_REPORT_M5.md](TEST_REPORT_M5.md) |
 | PC MONITOR | CPU/RAM/DISK/mạng/pin từ laptop | [PC_AGENT_SETUP.md](PC_AGENT_SETUP.md) |

@@ -9,6 +9,16 @@ chưa giải quyết (hiện không có).
 
 ## Tổng quan
 
+### Pixel Pet VOLT + tương tác chạm — 2026-11-23 (chưa phát hành)
+
+Pet là VOLT, robot mascot nguyên bản của DeskOS (48×48 phóng 2×, vẫn 96×96), với tương tác
+chạm: xoa đầu, cù bụng, bắn móc cáp hai bên, vuốt, giữ để treo ngược; phản ứng không ghi NVS,
+không cộng XP. **SOFTWARE PASS**: 83 nhóm test PASS (67 C++ + 9 PC Agent + 7 Serial logger) + kiểm dữ liệu sprite, 8 nhóm pet; RAM tĩnh 55,252 B; flash 1,068,945 B (81.6%, +30,580 B so RC1, còn 241,775 B); firmware.bin 1,074,688 B, SHA256 `EAE25DFCBFFB770B25E2264B54A25771CAD87EF64D636F4B829F7059A6A15E7D`. VOLT chưa nạp; board đang chạy bản prototype trước
+(đã nạp COM6 theo yêu cầu chủ board, boot/NVS/network OK qua Serial). Hình ảnh/cảm ứng
+**HARDWARE PENDING**. Chi tiết và log: [PET_VOLT.md](PET_VOLT.md).
+
+Bảng dưới là checkpoint RC1 gốc; không thay đổi các kết quả nghiệm thu lịch sử.
+
 | Milestone | Firmware | Commit | Software | Hardware |
 | --- | --- | --- | --- | --- |
 | M0 Shell/Touch/Diag | M0_SHELL_01 | `654b069` (`m0-stable`) | PASS | **PASS** (người dùng) |

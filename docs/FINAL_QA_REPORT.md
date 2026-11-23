@@ -10,6 +10,13 @@ Báo cáo này không chứa kết quả phần cứng mới: chưa Upload, chư
 
 ## 1. Git tại thời điểm audit
 
+> **Bổ sung 2026-11-23 — Pixel Pet VOLT + tương tác chạm, chưa phát hành:** build **SOFTWARE PASS**,
+> 83 nhóm test PASS (67 C++ + 9 PC Agent + 7 Serial logger) + kiểm dữ liệu sprite, 8 nhóm pet; RAM tĩnh 55,252 B; flash 1,068,945 B (81.6%, +30,580 B so RC1, còn 241,775 B); firmware.bin 1,074,688 B, SHA256 `EAE25DFCBFFB770B25E2264B54A25771CAD87EF64D636F4B829F7059A6A15E7D`. Xem [PET_VOLT.md](PET_VOLT.md), [log build](PET_build.log), [log test](PET_tests.log).
+> Sprite/nhãn/icon và phản ứng chạm của pet được thay/thêm; XP/level, schema NVS, `AppManager`,
+> phần cứng và network không đổi. Hình xem trước chỉ là kiểm tra trên máy; hình ảnh/timing/cảm ứng
+> pet **HARDWARE PENDING**; VOLT chưa nạp, chưa xác nhận giao diện trên board.
+> Các phần còn lại của báo cáo ghi checkpoint RC1 ngày 2026-11-20.
+
 | Mục | Giá trị |
 | --- | --- |
 | HEAD trước RC1 | `759405e` Finalize M6 project documentation (sạch, đồng bộ `origin/feature/m2-daily-missions`) |

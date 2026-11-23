@@ -2,6 +2,7 @@
 #include <Arduino.h>
 #include "TestSupport.h"
 #include "apps/PixelPetScreen.h"
+#include "ui/PetSpriteData.h"
 
 uint32_t testNow=0;
 TestSerial Serial;
@@ -86,11 +87,128 @@ void unlocksAndStyles() {
   uint8_t seen=0;
   for (int i=0;i<5;++i) { f.tap(STYLE_X,STYLE_Y); seen|=1U<<static_cast<uint8_t>(f.pet.style()); }
   CHECK(seen==0x1F);  // All five styles reachable at LV10.
-  // Frames: crown head for Crown/Aura, sleepy eyes in sleep, blink in idle.
-  CHECK(petFrame(PetMood::Idle,PetStyle::Crown,0,0).head==PetHead::Crown);
+  // Styles keep the robot; crown is an overlay, LED eyes express the mood.
+  CHECK(petFrame(PetMood::Idle,PetStyle::Crown,0,0).crown);
   CHECK(petFrame(PetMood::Sleep,PetStyle::Classic,0,0).eyes==PetEyes::Sleepy);
   CHECK(petFrame(PetMood::Idle,PetStyle::Classic,3100,0).eyes==PetEyes::Closed);
   CHECK(petFrame(PetMood::Happy,PetStyle::HeartEyes,0,0).eyes==PetEyes::Heart);
+}
+bool isLed(char ch) { return ch=='e' || ch=='g' || ch=='o' || ch=='w'; }  // LED colours and their glint.
+bool sitting(PetPose pose) { return pose==PetPose::Sleep || pose==PetPose::SleepBreathe; }
+bool hanging(PetPose pose) { return pose==PetPose::Hang || pose==PetPose::HangSwing; }
+bool symmetricPose(PetPose pose) {
+  return pose==PetPose::Relaxed || pose==PetPose::Breathe || sitting(pose) || pose==PetPose::Cheer ||
+         pose==PetPose::CheerBounce || pose==PetPose::Laugh;
+}
+unsigned countIn(const PetCanvas& c,uint8_t x0,uint8_t y0,uint8_t w,uint8_t h,const char* keys) {
+  unsigned n=0;
+  for (uint8_t y=y0;y<y0+h;++y) for (uint8_t x=x0;x<x0+w;++x) n+=std::strchr(keys,c.rows[y][x])!=nullptr;
+  return n;
+}
+void voltFrames() {
+  CHECK(PET_SPRITE_SIZE==48 && PET_SPRITE_SIZE*2==96 && petSpritesWellFormed() && petInkCount()==11);
+  // LED cells on the visor per expression: open, blink, happy, sleep, star (+gold), heart (+rose).
+  const unsigned LED[6]={52,20,24,14,4,4},STAR_GOLD=32,HEART_ROSE=36,SKIP_ROWS=13;
+  bool seen[256]={false};
+  for (uint8_t pose=0;pose<static_cast<uint8_t>(PetPose::Count);++pose) {
+    for (uint8_t eyes=0;eyes<static_cast<uint8_t>(PetEyes::Count);++eyes) for (uint8_t crown=0;crown<2;++crown) {
+      const PetFrame frame={static_cast<PetPose>(pose),static_cast<PetEyes>(eyes),crown!=0};
+      const uint8_t key=petFrameKey(frame);
+      CHECK(!seen[key]); seen[key]=true;  // Every visual component affects invalidation.
+      PetCanvas c; std::memset(&c,'?',sizeof(c)); composePet(c,frame);
+      for (uint8_t y=0;y<PET_SPRITE_SIZE;++y) {
+        CHECK(std::strlen(c.rows[y])==PET_SPRITE_SIZE);
+        for (uint8_t x=0;x<PET_SPRITE_SIZE;++x) CHECK(std::strchr(".#hmMvepPgow",c.rows[y][x]));
+      }
+      const unsigned all=PET_SPRITE_SIZE;
+      CHECK(countIn(c,0,0,all,all,"hmM")>=190 && countIn(c,0,0,all,all,"pP")>=90);  // Mint helmet, purple body.
+      CHECK(countIn(c,0,0,all,all,"#")>=250 && countIn(c,0,0,all,all,"v")>=130);    // Outline, dark visor.
+      CHECK(countIn(c,0,0,all,all,"g")>=40 && countIn(c,0,0,all,all,"o")>=20);      // Gold bolts/boots, rose mitts.
+      if (hanging(frame.pose)) continue;  // Checked against the Cheer frame below.
+      const int8_t dx=petart::HEAD_OFFSET[pose][0],dy=petart::HEAD_OFFSET[pose][1];
+      const uint8_t ex=static_cast<uint8_t>(petart::EYE_X+dx),ey=static_cast<uint8_t>(petart::EYE_Y+dy);
+      CHECK(countIn(c,ex,ey,petart::EYE_W,petart::EYE_H,"e")==LED[eyes]);
+      CHECK(countIn(c,ex,ey,petart::EYE_W,petart::EYE_H,"g")==(eyes==static_cast<uint8_t>(PetEyes::Star)?STAR_GOLD:0U));
+      CHECK(countIn(c,ex,ey,petart::EYE_W,petart::EYE_H,"o")==(eyes==static_cast<uint8_t>(PetEyes::Heart)?HEART_ROSE:0U));
+      const uint8_t top=petHeadTop(frame.pose);
+      CHECK(top==petart::HEAD_TOP+dy);
+      const unsigned crownGold=countIn(c,static_cast<uint8_t>(petart::CROWN_X+dx),static_cast<uint8_t>(petart::CROWN_Y+dy),
+                                       petart::CROWN_W,petart::CROWN_H,"g");
+      CHECK(crownGold==(crown?34U:0U));  // Crown follows the head in every upright pose.
+      if (!crown) for (uint8_t y=0;y<top;++y) CHECK(std::strspn(c.rows[y],".")==PET_SPRITE_SIZE);
+      if (symmetricPose(frame.pose) && dx==0) {  // Mirrored helmet and LED eyes below the antenna and visor glint.
+        for (uint8_t y=top+SKIP_ROWS;y<=petart::HEAD_BOTTOM+dy;++y) for (uint8_t x=0;x<PET_SPRITE_SIZE/2;++x) {
+          const char a=c.rows[y][x],b=c.rows[y][PET_SPRITE_SIZE-1-x];
+          CHECK((a=='.')==(b=='.') && isLed(a)==isLed(b));
+        }
+      }
+      unsigned segments=0; bool inside=false;
+      for (uint8_t x=0;x<PET_SPRITE_SIZE;++x) { const bool on=c.rows[46][x]!='.'; segments+=on && !inside; inside=on; }
+      CHECK(segments==(sitting(frame.pose)?1U:2U));  // Two boots standing; crossed legs when sitting.
+    }
+  }
+  // Arms: one raised to wave, both raised to cheer, none at rest; the cable leaves the hand.
+  const PetPose raised[4]={PetPose::Wave,PetPose::WaveFlick,PetPose::Cheer,PetPose::Relaxed};
+  for (PetPose pose:raised) {
+    PetCanvas c; composePet(c,{pose,PetEyes::Open,false});
+    const bool left=countIn(c,0,14,8,13,"pPo")>0,right=countIn(c,40,14,8,13,"pPo")>0;
+    CHECK(right==(pose!=PetPose::Relaxed) && left==(pose==PetPose::Cheer));
+  }
+  PetCanvas cable; composePet(cable,{PetPose::GrappleLeft,PetEyes::Open,false});
+  CHECK(cable.rows[petCableRow()][0]=='w' && countIn(cable,0,petCableRow(),PET_SPRITE_SIZE,1,"w")>=1);
+  composePet(cable,{PetPose::GrappleRight,PetEyes::Open,false});
+  CHECK(cable.rows[petCableRow()][PET_SPRITE_SIZE-1]=='w');
+  // Hang = Cheer flipped upside down (+ cable); the swing frame is shifted sideways.
+  for (uint8_t crown=0;crown<2;++crown) {
+    PetCanvas cheer,hang,swing;
+    composePet(cheer,{PetPose::Cheer,PetEyes::Happy,crown!=0});
+    composePet(hang,{PetPose::Hang,PetEyes::Happy,crown!=0});
+    composePet(swing,{PetPose::HangSwing,PetEyes::Happy,crown!=0});
+    unsigned strand=0;
+    for (uint8_t y=0;y<PET_SPRITE_SIZE;++y) for (uint8_t x=0;x<PET_SPRITE_SIZE;++x) {
+      const char flipped=cheer.rows[PET_SPRITE_SIZE-1-y][x],h=hang.rows[y][x];
+      if (h=='w' && flipped=='.') { ++strand; CHECK(x==PET_SPRITE_SIZE/2-1); }
+      else CHECK(h==flipped);
+      const char shifted=x>=PET_HANG_SWING?cheer.rows[PET_SPRITE_SIZE-1-y][x-PET_HANG_SWING]:'.';
+      if (swing.rows[y][x]=='w' && shifted=='.') CHECK(x==PET_SPRITE_SIZE/2-1+PET_HANG_SWING);
+      else CHECK(swing.rows[y][x]==shifted);
+    }
+    CHECK(strand>=2 && hang.rows[0][PET_SPRITE_SIZE/2-1]=='w');
+  }
+  const uint32_t times[]={0,249,250,599,600,899,900,3049,3050,3199,3200,UINT32_MAX};
+  for (uint8_t style=0;style<PET_STYLE_COUNT;++style) for (uint8_t mood=0;mood<4;++mood) {
+    for (uint32_t time:times) {
+      const PetFrame f=petFrame(static_cast<PetMood>(mood),static_cast<PetStyle>(style),time,time);
+      CHECK(static_cast<uint8_t>(f.pose)<static_cast<uint8_t>(PetPose::Count));
+      CHECK(f.crown==(style==static_cast<uint8_t>(PetStyle::Crown) || style==static_cast<uint8_t>(PetStyle::Aura)));
+      if (mood==static_cast<uint8_t>(PetMood::Sleep)) CHECK(f.eyes==PetEyes::Sleepy);
+    }
+  }
+  CHECK(petFrameKey(petFrame(PetMood::Happy,PetStyle::Classic,0,0))!=
+        petFrameKey(petFrame(PetMood::Happy,PetStyle::Classic,0,250)));
+  CHECK(petFrameKey(petFrame(PetMood::Celebrate,PetStyle::Classic,0,0))!=
+        petFrameKey(petFrame(PetMood::Celebrate,PetStyle::Classic,0,250)));
+  CHECK(petFrameKey(petFrame(PetMood::Sleep,PetStyle::Classic,0,0))!=
+        petFrameKey(petFrame(PetMood::Sleep,PetStyle::Classic,0,900)));
+  PetCanvas fallback,normal;
+  composePet(fallback,{static_cast<PetPose>(255),static_cast<PetEyes>(255),false});
+  composePet(normal,{PetPose::Relaxed,PetEyes::Open,false});
+  CHECK(!std::memcmp(&fallback,&normal,sizeof(normal)) && petHeadTop(static_cast<PetPose>(255))==petart::HEAD_TOP);
+}
+void voltLabelsAndBounds() {
+  Fixture f;
+  auto& draw=f.display.graphics();
+  draw.watchText("SPIDER","VOLT");
+  f.open();
+  f.tap(PET_X,PET_Y); f.tick(PetService::HAPPY_MS);
+  f.tap(SLEEP_X,SLEEP_Y); f.tick(950); f.tap(PET_X,PET_Y);
+  f.setXP(25); f.tick(10);  // XP gain text.
+  f.setXP(100); f.tick(10); // Level-up text.
+  f.setXP(UINT32_MAX); f.tick(10); // Longest XP header; unlock notification.
+  for (int i=0;i<5;++i) { f.tap(STYLE_X,STYLE_Y); f.tick(250); }
+  f.tap(SLEEP_X,SLEEP_Y); f.tap(SLEEP_X,SLEEP_Y);
+  CHECK(draw.textMatches[0]==0 && draw.textMatches[1]>=5);
+  CHECK(draw.outside==0 && f.progress.totalXP()==UINT32_MAX);
 }
 void persistenceAndCorruption() {
   FakeBlobStore store;
@@ -141,6 +259,72 @@ void renderBoundsAndAllocations() {
   CHECK(draw.draws==before);
   f.tap(80,NAV_Y); CHECK(f.manager.activeId()==AppId::Home);
 }
+void touchEvent(Fixture& f,TouchEvent::Type type,int16_t x,int16_t y,uint32_t heldMs) {
+  f.manager.onTouch({type,x,y,f.clock.time,heldMs});
+}
+void interactions() {
+  Fixture f; f.setXP(50); f.open(); f.tick(PetService::HAPPY_MS);  // Let the XP greeting finish.
+  auto& draw=f.display.graphics();
+  const unsigned saves=f.store.saves; const uint32_t xp=f.progress.totalXP();
+  const unsigned long allocations=g_allocations;
+  const int16_t HEAD_Y=80,BELLY_Y=150,LEFT_X=96,RIGHT_X=224;
+  CHECK(HEAD_Y<68+(petHeadBottom()+1)*2 && BELLY_Y>=68+(petHeadBottom()+1)*2);
+  // Head tap = pat: wave + hearts, PETS +1.
+  f.tap(PET_X,HEAD_Y);
+  CHECK(f.pet.mood()==PetMood::Happy && f.pet.event()==PetEvent::Petted && f.pet.petCount()==1);
+  CHECK(f.pet.reaction()==PetReaction::None);
+  // Belly tap = tickle: laughing frames, PETS +1, then back to idle.
+  f.tap(PET_X,BELLY_Y);
+  CHECK(f.pet.reaction()==PetReaction::Tickle && f.pet.event()==PetEvent::Tickled && f.pet.petCount()==2);
+  CHECK(f.pet.mood()==PetMood::Idle);
+  const PetFrame laugh=petFrame(f.pet.mood(),f.pet.reaction(),f.pet.style(),0,0,0);
+  CHECK(laugh.pose==PetPose::Laugh && laugh.eyes==PetEyes::Happy);
+  CHECK(petFrame(PetMood::Idle,PetReaction::Tickle,PetStyle::Classic,0,150,0).pose==PetPose::LaughShake);
+  f.tick(PetService::REACTION_MS); CHECK(f.pet.reaction()==PetReaction::None);
+  // Empty sides = grapple shot towards that side; no PETS.
+  f.tap(LEFT_X,110);
+  CHECK(f.pet.reaction()==PetReaction::GrappleLeft && f.pet.event()==PetEvent::Grapple && f.pet.eventValue()==0);
+  f.tap(RIGHT_X,110);
+  CHECK(f.pet.reaction()==PetReaction::GrappleRight && f.pet.eventValue()==1 && f.pet.petCount()==2);
+  CHECK(petFrame(PetMood::Idle,PetReaction::GrappleRight,PetStyle::Classic,0,0,0).pose==PetPose::GrappleRight);
+  f.tick(PetService::REACTION_MS);
+  // Stroke (finger travels >8 px): AppManager cancels the tap, the pet gets one pat; no tap after it.
+  touchEvent(f,TouchEvent::Type::Press,130,100,0);
+  touchEvent(f,TouchEvent::Type::Move,150,104,80);
+  CHECK(f.pet.petCount()==3 && f.pet.mood()==PetMood::Happy && f.pet.event()==PetEvent::Petted);
+  touchEvent(f,TouchEvent::Type::Release,170,104,120); touchEvent(f,TouchEvent::Type::Tap,170,104,120);
+  f.manager.update(0); CHECK(f.pet.petCount()==3);
+  // Long press (>700 ms, finger still) = hang upside down for HANG_MS.
+  touchEvent(f,TouchEvent::Type::Press,PET_X,120,0);
+  touchEvent(f,TouchEvent::Type::Move,PET_X+2,121,750);
+  CHECK(f.pet.reaction()==PetReaction::Hang && f.pet.event()==PetEvent::Hanging && f.pet.petCount()==3);
+  touchEvent(f,TouchEvent::Type::Release,PET_X+2,121,900); f.manager.update(0);
+  CHECK(petFrame(f.pet.mood(),f.pet.reaction(),f.pet.style(),0,0,0).pose==PetPose::Hang);
+  CHECK(petFrame(f.pet.mood(),f.pet.reaction(),f.pet.style(),0,400,0).pose==PetPose::HangSwing);
+  f.tick(1000); CHECK(f.pet.reaction()==PetReaction::Hang);
+  f.tick(PetService::HANG_MS); CHECK(f.pet.reaction()==PetReaction::None);
+  // A long press on a button is not a pet gesture.
+  touchEvent(f,TouchEvent::Type::Press,STYLE_X,STYLE_Y,0);
+  touchEvent(f,TouchEvent::Type::Move,STYLE_X,STYLE_Y,750);
+  CHECK(f.pet.reaction()==PetReaction::None);
+  touchEvent(f,TouchEvent::Type::Release,STYLE_X,STYLE_Y,800); f.manager.update(0);
+  // A sleeping pet wakes up on a tickle.
+  f.tap(SLEEP_X,SLEEP_Y); CHECK(f.pet.mood()==PetMood::Sleep);
+  f.tap(PET_X,BELLY_Y);
+  CHECK(f.pet.mood()==PetMood::Idle && f.pet.event()==PetEvent::Woke && f.pet.reaction()==PetReaction::Tickle);
+  // Sleep/style buttons stop a reaction; reactions never touch XP or NVS while on screen.
+  f.tap(SLEEP_X,SLEEP_Y); CHECK(f.pet.reaction()==PetReaction::None && f.pet.mood()==PetMood::Sleep);
+  f.tap(SLEEP_X,SLEEP_Y);
+  for (int i=0;i<300;++i) { f.tick(23); if (i%60==0) f.tap(i%120?PET_X:LEFT_X,i%120?BELLY_Y:110); }
+  CHECK(f.progress.totalXP()==xp && f.store.saves==saves && g_allocations==allocations);
+  CHECK(draw.outside==0 && draw.clears==1);
+  // A press on the pet interrupted by an app switch (Cancel at 0,0) does nothing.
+  f.tick(PetService::REACTION_MS); CHECK(f.pet.reaction()==PetReaction::None);
+  touchEvent(f,TouchEvent::Type::Press,PET_X,BELLY_Y,0);
+  f.manager.open(AppId::Home); f.manager.update(0);
+  CHECK(f.manager.activeId()==AppId::Home && f.pet.reaction()==PetReaction::None);
+  CHECK(f.store.saves==saves+1);  // Leaving the app saves the new PETS count once.
+}
 }  // namespace
 int main() {
   struct Test { const char* name; void (*run)(); };
@@ -149,7 +333,10 @@ int main() {
     {"P02 moods, TAP, sleep/wake, live level-up; XP never changed",moodsAndXpNeverChanges},
     {"P03 locked/unlocked styles and frame selection",unlocksAndStyles},
     {"P04 save on exit only, restore, corrupt record, write failure",persistenceAndCorruption},
-    {"P05 320x240 bounds, no full redraw, zero steady-state allocations",renderBoundsAndAllocations}
+    {"P05 320x240 bounds, no full redraw, zero steady-state allocations",renderBoundsAndAllocations},
+    {"P06 VOLT poses/LED eyes/styles, robot identity, unique frame keys",voltFrames},
+    {"P07 VOLT labels, extreme XP bounds, no old pet names",voltLabelsAndBounds},
+    {"P08 touch: head pat, belly tickle, side grapple, stroke, hold-to-hang, wake; no XP/NVS/heap",interactions}
   };
   for (const auto& t:tests) { const int before=failures; t.run(); std::printf("%s: %s\n",failures==before?"PASS":"FAIL",t.name); }
   std::printf("RESULT: %u pet tests, %d failures\n",static_cast<unsigned>(sizeof(tests)/sizeof(tests[0])),failures);

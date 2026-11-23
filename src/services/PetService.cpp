@@ -49,8 +49,14 @@ void PetService::absorbProgress() {
   moodAt_=lastInput_=clock_.nowMs();
 }
 
+void PetService::clearReaction() {
+  if (reaction_==PetReaction::None) return;
+  reaction_=PetReaction::None; ++revision_;
+}
+
 void PetService::onVisit() {
   lastInput_=clock_.nowMs();
+  clearReaction();
   setMood(PetMood::Idle); event_=PetEvent::None; ++revision_;
   absorbProgress();
 }
@@ -58,6 +64,7 @@ void PetService::update() {
   if (!initialized_) return;
   absorbProgress();  // e.g. a Focus session finishing while the pet is on screen.
   const uint32_t now=clock_.nowMs();
+  if (reaction_!=PetReaction::None && now-reactionAt_>=(reaction_==PetReaction::Hang?HANG_MS:REACTION_MS)) clearReaction();
   if (mood_==PetMood::Happy && now-moodAt_>=HAPPY_MS) setMood(PetMood::Idle);
   else if (mood_==PetMood::Celebrate && now-moodAt_>=CELEBRATE_MS) setMood(PetMood::Idle);
   else if (mood_==PetMood::Idle && now-lastInput_>=SLEEP_AFTER_MS) { setMood(PetMood::Sleep); raise(PetEvent::Slept,0); }
@@ -66,11 +73,26 @@ void PetService::pet() {
   lastInput_=clock_.nowMs();
   const bool wasAsleep=mood_==PetMood::Sleep;
   if (record_.petCount<UINT32_MAX) ++record_.petCount;  // Saved on exit, not per tap.
+  clearReaction();
   if (mood_!=PetMood::Celebrate) { setMood(PetMood::Happy); moodAt_=lastInput_; }
   raise(wasAsleep?PetEvent::Woke:PetEvent::Petted,record_.petCount);
 }
+void PetService::react(PetReaction reaction) {
+  if (reaction==PetReaction::None || reaction>=PetReaction::Count) return;
+  lastInput_=clock_.nowMs();
+  const bool wasAsleep=mood_==PetMood::Sleep;
+  // The reaction frames replace the mood animation; a level-up celebration keeps running underneath.
+  if (mood_==PetMood::Sleep || mood_==PetMood::Happy) setMood(PetMood::Idle);
+  reaction_=reaction; reactionAt_=lastInput_; ++revision_;
+  if (reaction==PetReaction::Tickle && record_.petCount<UINT32_MAX) ++record_.petCount;  // Saved on exit.
+  if (wasAsleep) raise(PetEvent::Woke,0);
+  else if (reaction==PetReaction::Tickle) raise(PetEvent::Tickled,record_.petCount);
+  else if (reaction==PetReaction::Hang) raise(PetEvent::Hanging,0);
+  else raise(PetEvent::Grapple,reaction==PetReaction::GrappleRight?1:0);
+}
 void PetService::toggleSleep() {
   lastInput_=clock_.nowMs();
+  clearReaction();
   if (mood_==PetMood::Sleep) { setMood(PetMood::Idle); raise(PetEvent::Woke,0); }
   else { setMood(PetMood::Sleep); raise(PetEvent::Slept,0); }
 }
